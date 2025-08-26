@@ -1,0 +1,28 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="#4F46E5" stroke="#312E81" stroke-width="2"/>
+  
+  <!-- Running figure -->
+  <g transform="translate(20, 18)">
+    <!-- Head -->
+    <circle cx="8" cy="8" r="4" fill="white"/>
+    
+    <!-- Body -->
+    <rect x="6" y="12" width="4" height="16" rx="2" fill="white"/>
+    
+    <!-- Arms -->
+    <rect x="2" y="15" width="10" height="3" rx="1.5" fill="white" transform="rotate(-15 7 16.5)"/>
+    
+    <!-- Legs -->
+    <rect x="4" y="27" width="3" height="10" rx="1.5" fill="white" transform="rotate(-20 5.5 32)"/>
+    <rect x="9" y="27" width="3" height="10" rx="1.5" fill="white" transform="rotate(30 10.5 32)"/>
+    
+    <!-- Motion lines -->
+    <line x1="16" y1="10" x2="20" y2="10" stroke="white" stroke-width="1.5" opacity="0.8"/>
+    <line x1="17" y1="15" x2="21" y2="15" stroke="white" stroke-width="1.5" opacity="0.6"/>
+    <line x1="18" y1="20" x2="22" y2="20" stroke="white" stroke-width="1.5" opacity="0.4"/>
+  </g>
+  
+  <!-- Letter C -->
+  <text x="32" y="50" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white" text-anchor="middle">C</text>
+</svg>
