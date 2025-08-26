@@ -1,9 +1,19 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import ResponsiveNavigation from '@/components/ResponsiveNavigation'
 import { createTest } from '@/lib/actions/tests'
-import { getStudents } from '@/lib/actions/students'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { Student } from '@/lib/types'
+
+// Declaração global para a função calculateCooperVO2
+declare global {
+  interface Window {
+    calculateCooperVO2: () => void;
+  }
+}
 
 interface NewCooperTestPageProps {
   searchParams: Promise<{
@@ -11,20 +21,191 @@ interface NewCooperTestPageProps {
   }>
 }
 
-export default async function NewCooperTestPage({ searchParams }: NewCooperTestPageProps) {
-  const supabase = await createServerSupabaseClient()
-  
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+export default function NewCooperTestPage({ searchParams }: NewCooperTestPageProps) {
+  const [students, setStudents] = useState<Student[]>([])
+  const [user, setUser] = useState<{ id: string; email?: string } | null>(null)
+  const [selectedStudentId, setSelectedStudentId] = useState<string>('')
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
-  if (!user) {
-    redirect('/login')
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const supabase = createClient()
+        
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
+        if (!user) {
+          router.push('/login')
+          return
+        }
+
+        // Fetch students from Supabase directly
+        const { data: studentsData, error } = await supabase
+          .from('evaluatees')
+          .select('*')
+          .order('name')
+
+        if (error) {
+          console.error('Error fetching students:', error)
+          return
+        }
+
+        const resolvedSearchParams = await searchParams
+        
+        setUser(user)
+        setStudents(studentsData || [])
+        setSelectedStudentId(resolvedSearchParams.student_id || '')
+      } catch (error) {
+        console.error('Error loading data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
+  }, [router, searchParams])
+
+  useEffect(() => {
+    if (students.length === 0) return
+
+    // Função para calcular VO2 do Cooper
+    window.calculateCooperVO2 = function() {
+      console.log('Função calculateCooperVO2 chamada!')
+      
+      const distanceInput = document.getElementById('cooper_distance') as HTMLInputElement
+      const studentSelect = document.getElementById('student_id') as HTMLSelectElement
+      const vo2Input = document.getElementById('vo2_max') as HTMLInputElement
+      const cooperResults = document.getElementById('cooper-results')
+      
+      if (!distanceInput || !studentSelect || !vo2Input) {
+        alert('Erro: Elementos do formulário não encontrados.')
+        return
+      }
+      
+      const distance = parseFloat(distanceInput.value)
+      const selectedStudentId = studentSelect.value
+      
+      if (!distance || isNaN(distance)) {
+        alert('Por favor, preencha a distância percorrida.')
+        return
+      }
+      
+      if (!selectedStudentId) {
+        alert('Por favor, selecione um avaliando.')
+        return
+      }
+      
+      if (distance < 500 || distance > 5000) {
+        alert('Distância deve estar entre 500 e 5000 metros.')
+        return
+      }
+      
+      const selectedStudent = students.find(s => s.id === selectedStudentId)
+      
+      if (!selectedStudent || !selectedStudent.birth_date || !selectedStudent.gender) {
+        alert('O avaliando selecionado não possui data de nascimento ou sexo cadastrados.')
+        return
+      }
+      
+      // Calcular idade
+      const birthDate = new Date(selectedStudent.birth_date)
+      const today = new Date()
+      let age = today.getFullYear() - birthDate.getFullYear()
+      const monthDiff = today.getMonth() - birthDate.getMonth()
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--
+      }
+      
+      const gender = selectedStudent.gender
+      
+      // Fórmula do Cooper
+      const vo2Max = Math.max(0, Math.round(((distance - 504.9) / 44.73) * 100) / 100)
+      
+      // Classificação
+      const classifications = {
+        masculino: {
+          '20-29': { excellent: 52, good: 46, fair: 42, poor: 37 },
+          '30-39': { excellent: 50, good: 44, fair: 40, poor: 35 },
+          '40-49': { excellent: 48, good: 42, fair: 38, poor: 33 },
+          '50-59': { excellent: 45, good: 39, fair: 35, poor: 30 },
+          '60+': { excellent: 42, good: 36, fair: 32, poor: 28 }
+        },
+        feminino: {
+          '20-29': { excellent: 44, good: 39, fair: 35, poor: 31 },
+          '30-39': { excellent: 42, good: 37, fair: 33, poor: 29 },
+          '40-49': { excellent: 40, good: 35, fair: 31, poor: 27 },
+          '50-59': { excellent: 37, good: 32, fair: 28, poor: 24 },
+          '60+': { excellent: 35, good: 30, fair: 26, poor: 22 }
+        }
+      }
+      
+      const ageGroup = age < 30 ? '20-29' : age < 40 ? '30-39' : age < 50 ? '40-49' : age < 60 ? '50-59' : '60+'
+      const genderKey = (gender === 'masculino' || gender === 'feminino') ? gender : 'masculino'
+      const classification = classifications[genderKey]?.[ageGroup] || classifications['masculino']['20-29']
+      
+      let classificationText = 'Muito Fraco'
+      if (vo2Max >= classification.excellent) classificationText = 'Excelente'
+      else if (vo2Max >= classification.good) classificationText = 'Bom'
+      else if (vo2Max >= classification.fair) classificationText = 'Regular'
+      else if (vo2Max >= classification.poor) classificationText = 'Fraco'
+      
+      // Atualizar interface
+      vo2Input.value = vo2Max.toString()
+      
+      const calculatedVo2El = document.getElementById('calculated-vo2')
+      const classificationEl = document.getElementById('vo2-classification')
+      const distanceKmEl = document.getElementById('distance-km')
+      
+      if (calculatedVo2El) calculatedVo2El.textContent = vo2Max.toString()
+      if (classificationEl) classificationEl.textContent = classificationText
+      if (distanceKmEl) distanceKmEl.textContent = (distance / 1000).toFixed(2)
+      
+      // Campos ocultos
+      const ageHidden = document.getElementById('cooper_age_hidden') as HTMLInputElement
+      const genderHidden = document.getElementById('cooper_gender_hidden') as HTMLInputElement
+      if (ageHidden) ageHidden.value = age.toString()
+      if (genderHidden) genderHidden.value = gender
+      
+      // Mostrar resultados
+      if (cooperResults) {
+        cooperResults.classList.remove('hidden')
+      }
+      
+      console.log('Cálculo concluído:', { vo2Max, classificationText, age, gender })
+    }
+
+    // Adicionar event listener para o botão
+    const calculateButton = document.getElementById('calculate-vo2')
+    if (calculateButton) {
+      calculateButton.addEventListener('click', window.calculateCooperVO2)
+    }
+
+    // Cleanup function
+    return () => {
+      if (calculateButton) {
+        calculateButton.removeEventListener('click', window.calculateCooperVO2)
+      }
+    }
+  }, [students])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    )
   }
 
-  const resolvedSearchParams = await searchParams
-  const students = await getStudents()
-  const selectedStudentId = resolvedSearchParams.student_id
+  if (!user) {
+    return null
+  }
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -218,113 +399,7 @@ export default async function NewCooperTestPage({ searchParams }: NewCooperTestP
         </div>
       </main>
 
-      <script dangerouslySetInnerHTML={{
-        __html: `
-          // Dados dos estudantes para busca automática de idade e sexo
-          const studentsData = ${JSON.stringify(students.map(s => ({
-            id: s.id,
-            name: s.name,
-            birth_date: s.birth_date,
-            gender: s.gender
-          })))};
-          
-          document.addEventListener('DOMContentLoaded', function() {
-            const studentSelect = document.getElementById('student_id');
-            const calculateBtn = document.getElementById('calculate-vo2');
-            const cooperResults = document.getElementById('cooper-results');
-            const vo2Input = document.getElementById('vo2_max');
-            
-            // Calcular VO2 máximo
-            calculateBtn.addEventListener('click', function() {
-              const distance = parseFloat(document.getElementById('cooper_distance').value);
-              const selectedStudentId = studentSelect.value;
-              
-              if (!distance) {
-                alert('Por favor, preencha a distância percorrida.');
-                return;
-              }
-              
-              if (!selectedStudentId) {
-                alert('Por favor, selecione um avaliando.');
-                return;
-              }
-              
-              if (distance < 500 || distance > 5000) {
-                alert('Distância deve estar entre 500 e 5000 metros.');
-                return;
-              }
-              
-              // Buscar dados do estudante selecionado
-              const selectedStudent = studentsData.find(s => s.id === selectedStudentId);
-              
-              if (!selectedStudent || !selectedStudent.birth_date || !selectedStudent.gender) {
-                alert('O avaliando selecionado não possui data de nascimento ou sexo cadastrados. Por favor, complete o cadastro do avaliando antes de realizar o teste.');
-                return;
-              }
-              
-              // Calcular idade
-              const birthDate = new Date(selectedStudent.birth_date);
-              const today = new Date();
-              let age = today.getFullYear() - birthDate.getFullYear();
-              const monthDiff = today.getMonth() - birthDate.getMonth();
-              if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                age--;
-              }
-              
-              const gender = selectedStudent.gender;
-              
-              // Fórmula do Cooper: VO2max = (distância em metros - 504.9) / 44.73
-              const vo2Max = Math.max(0, Math.round(((distance - 504.9) / 44.73) * 100) / 100);
-              
-              // Classificação baseada na idade e gênero
-              const classifications = {
-                masculino: {
-                  '20-29': { excellent: 52, good: 46, fair: 42, poor: 37 },
-                  '30-39': { excellent: 50, good: 44, fair: 40, poor: 35 },
-                  '40-49': { excellent: 48, good: 42, fair: 38, poor: 33 },
-                  '50-59': { excellent: 45, good: 39, fair: 35, poor: 30 },
-                  '60+': { excellent: 42, good: 36, fair: 32, poor: 28 }
-                },
-                feminino: {
-                  '20-29': { excellent: 44, good: 39, fair: 35, poor: 31 },
-                  '30-39': { excellent: 42, good: 37, fair: 33, poor: 29 },
-                  '40-49': { excellent: 40, good: 35, fair: 31, poor: 27 },
-                  '50-59': { excellent: 37, good: 32, fair: 28, poor: 24 },
-                  '60+': { excellent: 35, good: 30, fair: 26, poor: 22 }
-                }
-              };
-              
-              const ageGroup = age < 30 ? '20-29' : 
-                               age < 40 ? '30-39' : 
-                               age < 50 ? '40-49' : 
-                               age < 60 ? '50-59' : '60+';
-              
-              const classification = classifications[gender][ageGroup];
-              let classificationText = 'Muito Fraco';
-              
-              if (vo2Max >= classification.excellent) classificationText = 'Excelente';
-              else if (vo2Max >= classification.good) classificationText = 'Bom';
-              else if (vo2Max >= classification.fair) classificationText = 'Regular';
-              else if (vo2Max >= classification.poor) classificationText = 'Fraco';
-              
-              // Atualizar resultados
-              document.getElementById('calculated-vo2').textContent = vo2Max;
-              document.getElementById('vo2-classification').textContent = classificationText;
-              document.getElementById('distance-km').textContent = (distance / 1000).toFixed(2);
-              
-              // Preencher campo VO2 Max
-              vo2Input.value = vo2Max;
-              
-              // Preencher campos ocultos para envio do formulário
-              document.getElementById('cooper_age_hidden').value = age;
-              document.getElementById('cooper_gender_hidden').value = gender;
-              
-              // Mostrar resultados
-              cooperResults.classList.remove('hidden');
-            });
-          });
-        `
-      }} />
+
     </div>
   )
 }

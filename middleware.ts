@@ -31,9 +31,18 @@ export async function middleware(request: NextRequest) {
   // supabase.auth.getUser(). A simple mistake could make it very hard to debug
   // issues with users being randomly logged out.
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  let user = null
+  try {
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
+    user = authUser
+  } catch (error) {
+    // Silently handle auth errors (like invalid refresh tokens)
+    // This prevents the middleware from crashing when tokens are invalid
+    console.log('Auth error in middleware (this is normal for logged out users):', error)
+    user = null
+  }
 
   // Protected routes - require authentication
   const protectedPaths = ['/dashboard', '/evaluatees', '/tests']
