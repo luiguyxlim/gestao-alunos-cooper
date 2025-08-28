@@ -87,6 +87,7 @@ export default function RegisterPage() {
                 name="fullName"
                 type="text"
                 required
+                aria-label="Nome completo"
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Nome completo"
                 value={fullName}
@@ -103,6 +104,7 @@ export default function RegisterPage() {
                 type="email"
                 autoComplete="email"
                 required
+                aria-label="Email"
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Email"
                 value={email}
@@ -120,6 +122,7 @@ export default function RegisterPage() {
                 autoComplete="new-password"
                 required
                 minLength={6}
+                aria-label="Senha"
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Senha (mínimo 6 caracteres)"
                 value={password}

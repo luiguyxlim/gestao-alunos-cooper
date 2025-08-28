@@ -4,6 +4,19 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import ResponsiveNavigation from '@/components/ResponsiveNavigation'
 import StudentCard from '@/components/StudentCard'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Avaliandos - Cooper Pro',
+  description: 'Gerencie seus avaliandos no Cooper Pro. Visualize, edite e acompanhe o progresso de todos os estudantes cadastrados no sistema.',
+  robots: 'noindex, nofollow',
+  openGraph: {
+    title: 'Avaliandos - Cooper Pro',
+    description: 'Gestão completa de avaliandos e estudantes',
+    type: 'website',
+    locale: 'pt_BR'
+  }
+}
 
 export default async function EvaluateesPage() {
   const supabase = await createServerSupabaseClient()

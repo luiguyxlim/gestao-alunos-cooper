@@ -7,7 +7,7 @@ import PerformanceEvaluationForm from '@/components/PerformanceEvaluationForm'
 
 interface NewPerformanceEvaluationPageProps {
   searchParams: Promise<{
-    student_id?: string
+    evaluatee_id?: string
   }>
 }
 
@@ -24,7 +24,7 @@ export default async function NewPerformanceEvaluationPage({ searchParams }: New
 
   const resolvedSearchParams = await searchParams
   const students = await getStudents()
-  const selectedStudentId = resolvedSearchParams.student_id
+  const selectedStudentId = resolvedSearchParams.evaluatee_id
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -33,7 +33,7 @@ export default async function NewPerformanceEvaluationPage({ searchParams }: New
       <main className="max-w-4xl mx-auto py-4 px-4 sm:py-6 sm:px-6 lg:px-8">
         <div className="mb-6">
           <Link
-            href={selectedStudentId ? `/tests?student_id=${selectedStudentId}` : '/tests'}
+            href={selectedStudentId ? `/tests?evaluatee_id=${selectedStudentId}` : '/tests'}
             className="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-500"
           >
             <svg className="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

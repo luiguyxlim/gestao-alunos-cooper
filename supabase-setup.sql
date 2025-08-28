@@ -10,8 +10,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 2. Criar tabela de alunos
-CREATE TABLE IF NOT EXISTS public.students (
+-- 2. Criar tabela de avaliandos
+CREATE TABLE IF NOT EXISTS public.evaluatees (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   name TEXT NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS public.students (
 -- 3. Criar tabela de testes de performance
 CREATE TABLE IF NOT EXISTS public.performance_tests (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  student_id UUID REFERENCES public.students(id) ON DELETE CASCADE NOT NULL,
+  student_id UUID REFERENCES public.evaluatees(id) ON DELETE CASCADE NOT NULL,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   test_date DATE NOT NULL,
   test_type TEXT NOT NULL,
@@ -84,8 +84,8 @@ CREATE TRIGGER update_profiles_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_students_updated_at
-  BEFORE UPDATE ON public.students
+CREATE TRIGGER update_evaluatees_updated_at
+  BEFORE UPDATE ON public.evaluatees
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
@@ -112,7 +112,7 @@ CREATE TRIGGER on_auth_user_created
 
 -- 8. Configurar Row Level Security (RLS)
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.evaluatees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.performance_tests ENABLE ROW LEVEL SECURITY;
 
 -- 9. Criar políticas de segurança para profiles
@@ -122,17 +122,17 @@ CREATE POLICY "Users can view own profile" ON public.profiles
 CREATE POLICY "Users can update own profile" ON public.profiles
   FOR UPDATE USING (auth.uid() = id);
 
--- 10. Criar políticas de segurança para students
-CREATE POLICY "Users can view own students" ON public.students
+-- 10. Criar políticas de segurança para evaluatees
+CREATE POLICY "Users can view own evaluatees" ON public.evaluatees
   FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert own students" ON public.students
+CREATE POLICY "Users can insert own evaluatees" ON public.evaluatees
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can update own students" ON public.students
+CREATE POLICY "Users can update own evaluatees" ON public.evaluatees
   FOR UPDATE USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can delete own students" ON public.students
+CREATE POLICY "Users can delete own evaluatees" ON public.evaluatees
   FOR DELETE USING (auth.uid() = user_id);
 
 -- 11. Criar políticas de segurança para performance_tests
@@ -149,8 +149,8 @@ CREATE POLICY "Users can delete own performance tests" ON public.performance_tes
   FOR DELETE USING (auth.uid() = user_id);
 
 -- 12. Criar índices para melhor performance
-CREATE INDEX IF NOT EXISTS idx_students_user_id ON public.students(user_id);
-CREATE INDEX IF NOT EXISTS idx_students_active ON public.students(active);
+CREATE INDEX IF NOT EXISTS idx_evaluatees_user_id ON public.evaluatees(user_id);
+CREATE INDEX IF NOT EXISTS idx_evaluatees_active ON public.evaluatees(active);
 CREATE INDEX IF NOT EXISTS idx_performance_tests_student_id ON public.performance_tests(student_id);
 CREATE INDEX IF NOT EXISTS idx_performance_tests_user_id ON public.performance_tests(user_id);
 CREATE INDEX IF NOT EXISTS idx_performance_tests_test_date ON public.performance_tests(test_date);

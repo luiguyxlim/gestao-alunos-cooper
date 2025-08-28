@@ -21,7 +21,8 @@ export async function getCooperTestsByStudent(studentId: string) {
   const { data, error } = await supabase
     .from('performance_tests')
     .select('*')
-    .eq('student_id', studentId)
+    .eq('user_id', user.id)
+    .eq('evaluatee_id', studentId)
     .eq('test_type', 'cooper_vo2')
     .not('cooper_test_distance', 'is', null)
     .order('test_date', { ascending: false })
@@ -55,7 +56,7 @@ export async function createPerformanceEvaluation(data: CreatePerformanceEvaluat
     // Preparar dados para inserção
     const performanceEvaluationData = {
       user_id: user.id,
-      student_id: data.student_id,
+      evaluatee_id: data.evaluatee_id,
       test_type: 'performance_evaluation',
       test_date: data.test_date,
       
@@ -92,7 +93,7 @@ export async function createPerformanceEvaluation(data: CreatePerformanceEvaluat
     }
 
     revalidatePath('/tests')
-    revalidatePath(`/tests?student_id=${data.student_id}`)
+    revalidatePath(`/tests?evaluatee_id=${data.evaluatee_id}`)
     
     return result
   } catch (error) {
@@ -218,7 +219,7 @@ export async function updatePerformanceEvaluation(id: string, data: UpdatePerfor
 
     revalidatePath('/tests')
     revalidatePath(`/tests/${id}`)
-    revalidatePath(`/tests?student_id=${data.student_id}`)
+    revalidatePath(`/tests?evaluatee_id=${data.evaluatee_id}`)
     
     return result
   } catch (error) {

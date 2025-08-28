@@ -2,14 +2,14 @@
 
 import { Student, deactivateStudent, reactivateStudent } from '@/lib/actions/students'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import TouchInteractions, { useHapticFeedback } from './TouchInteractions'
 
 interface StudentCardProps {
   student: Student
 }
 
-export default function StudentCard({ student }: StudentCardProps) {
+function StudentCard({ student }: StudentCardProps) {
   const [isUpdating, setIsUpdating] = useState(false)
   const triggerHaptic = useHapticFeedback()
 
@@ -122,6 +122,15 @@ export default function StudentCard({ student }: StudentCardProps) {
               </svg>
               Editar
             </Link>
+            <Link
+              href={`/tests/new?evaluatee_id=${student.id}`}
+              className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-green-700 bg-green-50 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 hover:scale-105 w-full lg:w-auto lg:min-w-[120px]"
+            >
+              <svg className="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Novo Teste
+            </Link>
             {student.active ? (
               <button
                 onClick={handleDeactivate}
@@ -211,3 +220,5 @@ export default function StudentCard({ student }: StudentCardProps) {
     </TouchInteractions>
   )
 }
+
+export default memo(StudentCard)

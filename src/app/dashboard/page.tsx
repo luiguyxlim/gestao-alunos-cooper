@@ -4,6 +4,19 @@ import { getTestsStats } from '@/lib/actions/tests'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import ResponsiveNavigation from '@/components/ResponsiveNavigation'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Dashboard - Cooper Pro',
+  description: 'Painel de controle do Cooper Pro. Visualize estatísticas, gerencie avaliandos e acompanhe o desempenho dos testes de performance física.',
+  robots: 'noindex, nofollow',
+  openGraph: {
+    title: 'Dashboard - Cooper Pro',
+    description: 'Painel de controle para gestão de avaliações físicas',
+    type: 'website',
+    locale: 'pt_BR'
+  }
+}
 
 export default async function DashboardPage() {
   const supabase = await createServerSupabaseClient()

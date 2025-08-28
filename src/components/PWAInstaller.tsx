@@ -69,7 +69,7 @@ export default function PWAInstaller() {
       setIsInstalled(true)
       setShowInstallButton(false)
       setNotification(null)
-      console.log('PWA was installed')
+      // PWA instalado com sucesso
     }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
@@ -79,7 +79,7 @@ export default function PWAInstaller() {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
         .then((reg) => {
-          console.log('SW registered: ', reg)
+          // Service Worker registrado com sucesso
           setRegistration(reg)
 
           // Check for updates
@@ -94,8 +94,8 @@ export default function PWAInstaller() {
             }
           })
         })
-        .catch((registrationError) => {
-          console.log('SW registration failed: ', registrationError)
+        .catch(() => {
+          // Falha no registro do Service Worker
         })
 
     }
@@ -113,9 +113,9 @@ export default function PWAInstaller() {
     const { outcome } = await deferredPrompt.userChoice
     
     if (outcome === 'accepted') {
-      console.log('User accepted the install prompt')
+      // Usuário aceitou a instalação
     } else {
-      console.log('User dismissed the install prompt')
+      // Usuário rejeitou a instalação
     }
     
     setDeferredPrompt(null)

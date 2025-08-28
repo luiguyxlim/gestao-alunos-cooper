@@ -118,6 +118,7 @@ export default function DebugLogger() {
             type="checkbox"
             checked={autoScroll}
             onChange={(e) => setAutoScroll(e.target.checked)}
+            aria-label="Auto-scroll"
             className="w-3 h-3"
           />
           Auto-scroll

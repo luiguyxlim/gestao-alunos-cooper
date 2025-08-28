@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, memo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,7 +26,7 @@ interface CooperTest {
   vo2_max: number
 }
 
-export default function PerformanceEvaluationForm({ students = [], selectedStudentId }: PerformanceEvaluationFormProps) {
+function PerformanceEvaluationForm({ students = [], selectedStudentId }: PerformanceEvaluationFormProps) {
   const router = useRouter()
   const [selectedEvaluatee, setSelectedEvaluatee] = useState<string>('')
   const [selectedCooperTest, setSelectedCooperTest] = useState<string>('')
@@ -135,7 +135,7 @@ export default function PerformanceEvaluationForm({ students = [], selectedStude
       }
 
       await createPerformanceEvaluation({
-        student_id: selectedEvaluatee,
+        evaluatee_id: selectedEvaluatee,
         test_date: testDate,
         vo2_max: cooperTest.vo2_max,
         cooper_distance: cooperTest.cooper_test_distance,
@@ -189,17 +189,38 @@ export default function PerformanceEvaluationForm({ students = [], selectedStude
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TestTube className="h-5 w-5" />
-            Nova Avaliação de Desempenho
-          </CardTitle>
-          <CardDescription>
-            Crie uma nova avaliação de desempenho baseada em dados de testes de Cooper anteriores
-          </CardDescription>
-        </CardHeader>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-8">
+          {/* Cabeçalho Principal */}
+          <div className="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl border border-white/20 p-8">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center text-white text-xl">
+                📊
+              </div>
+              <div>
+                <h1 className="text-3xl font-black text-slate-900">
+                  Nova Avaliação de Desempenho
+                </h1>
+                <p className="text-slate-600 mt-1">
+                  Crie uma nova avaliação de desempenho baseada em dados de testes de Cooper anteriores
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <Card className="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl border border-white/20">
+            <CardHeader className="pb-6">
+              <CardTitle className="flex items-center gap-3 text-xl font-bold text-slate-900">
+                <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center text-white">
+                  <TestTube className="h-4 w-4" />
+                </div>
+                Dados da Avaliação
+              </CardTitle>
+              <CardDescription className="text-slate-600">
+                Preencha os dados necessários para gerar a avaliação de desempenho
+              </CardDescription>
+            </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
@@ -209,10 +230,13 @@ export default function PerformanceEvaluationForm({ students = [], selectedStude
             )}
 
             {/* Seleção do Avaliando */}
-            <div className="space-y-2">
-              <Label htmlFor="evaluatee">Avaliando</Label>
+            <div className="space-y-3">
+              <Label htmlFor="evaluatee" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <User className="h-4 w-4 text-indigo-600" />
+                Avaliando
+              </Label>
               <Select value={selectedEvaluatee} onValueChange={setSelectedEvaluatee}>
-                <SelectTrigger>
+                <SelectTrigger className="h-12 border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 rounded-xl">
                   <SelectValue placeholder="Selecione um avaliando" />
                 </SelectTrigger>
                 <SelectContent>
@@ -239,16 +263,21 @@ export default function PerformanceEvaluationForm({ students = [], selectedStude
 
             {/* Seleção do Teste de Cooper */}
             {selectedEvaluatee && (
-              <div className="space-y-2">
-                <Label htmlFor="cooper-test">Teste de Cooper (Dados de VO2)</Label>
+              <div className="space-y-3">
+                <Label htmlFor="cooper-test" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                  <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded flex items-center justify-center text-white text-xs">
+                    🏃‍♂️
+                  </div>
+                  Teste de Cooper (Dados de VO2)
+                </Label>
                 {isLoadingTests ? (
-                  <div className="flex items-center gap-2 p-3 border rounded">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm text-muted-foreground">Carregando testes...</span>
+                  <div className="flex items-center gap-3 p-4 border border-slate-200 rounded-xl bg-slate-50">
+                    <Loader2 className="h-5 w-5 animate-spin text-indigo-600" />
+                    <span className="text-sm text-slate-600 font-medium">Carregando testes...</span>
                   </div>
                 ) : (
                   <Select value={selectedCooperTest} onValueChange={setSelectedCooperTest}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-12 border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 rounded-xl">
                       <SelectValue placeholder="Selecione um teste de Cooper" />
                     </SelectTrigger>
                     <SelectContent>
@@ -270,10 +299,12 @@ export default function PerformanceEvaluationForm({ students = [], selectedStude
 
             {/* Dados do Avaliando Selecionado */}
             {selectedEvaluateeData && (
-              <Card className="bg-muted/50">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <User className="h-4 w-4" />
+              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl shadow-lg">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center text-white">
+                      <User className="h-4 w-4" />
+                    </div>
                     Dados do Avaliando
                   </CardTitle>
                 </CardHeader>
@@ -315,118 +346,176 @@ export default function PerformanceEvaluationForm({ students = [], selectedStude
 
             {/* Variáveis de Entrada */}
             {selectedCooperTest && selectedEvaluateeData?.weight && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="intensity" className="text-red-600 font-semibold">
-                    % Intensidade do Treino *
-                  </Label>
-                  <Input
-                    id="intensity"
-                    type="number"
-                    min="1"
-                    max="100"
-                    step="0.1"
-                    value={intensityPercentage}
-                    onChange={(e) => setIntensityPercentage(e.target.value)}
-                    placeholder="Ex: 75"
-                    className="border-red-200 focus:border-red-500"
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Percentual de intensidade do treinamento (1-100%)
-                  </p>
+              <div className="bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-200 rounded-2xl p-6 shadow-lg">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center text-white">
+                    ⚡
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900">Parâmetros de Treinamento</h3>
                 </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="intensity" className="text-sm font-bold text-orange-700 flex items-center gap-2">
+                      <div className="w-4 h-4 bg-orange-600 rounded-full"></div>
+                      % Intensidade do Treino *
+                    </Label>
+                    <Input
+                      id="intensity"
+                      type="number"
+                      min="1"
+                      max="100"
+                      step="0.1"
+                      value={intensityPercentage}
+                      onChange={(e) => setIntensityPercentage(e.target.value)}
+                      placeholder="Ex: 75"
+                      className="h-12 border-orange-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 rounded-xl bg-white/90"
+                      required
+                    />
+                    <p className="text-xs text-orange-600 font-medium">
+                      Percentual de intensidade do treinamento (1-100%)
+                    </p>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="time" className="text-red-600 font-semibold">
-                    T - Tempo de Treino (min) *
-                  </Label>
-                  <Input
-                    id="time"
-                    type="number"
-                    min="1"
-                    step="0.1"
-                    value={trainingTime}
-                    onChange={(e) => setTrainingTime(e.target.value)}
-                    placeholder="Ex: 40"
-                    className="border-red-200 focus:border-red-500"
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Tempo para percorrer determinada distância (em minutos)
-                  </p>
+                  <div className="space-y-3">
+                    <Label htmlFor="time" className="text-sm font-bold text-red-700 flex items-center gap-2">
+                      <div className="w-4 h-4 bg-red-600 rounded-full"></div>
+                      T - Tempo de Treino (min) *
+                    </Label>
+                    <Input
+                      id="time"
+                      type="number"
+                      min="1"
+                      step="0.1"
+                      value={trainingTime}
+                      onChange={(e) => setTrainingTime(e.target.value)}
+                      placeholder="Ex: 40"
+                      className="h-12 border-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 rounded-xl bg-white/90"
+                      required
+                    />
+                    <p className="text-xs text-red-600 font-medium">
+                      Tempo para percorrer determinada distância (em minutos)
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Data do Teste */}
-            <div className="space-y-2">
-              <Label htmlFor="test-date">Data do Teste</Label>
+            <div className="space-y-3">
+              <Label htmlFor="test-date" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <div className="w-4 h-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded flex items-center justify-center text-white text-xs">
+                  📅
+                </div>
+                Data do Teste
+              </Label>
               <Input
                 id="test-date"
                 type="date"
                 value={testDate}
                 onChange={(e) => setTestDate(e.target.value)}
+                className="h-12 border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 rounded-xl"
                 required
               />
             </div>
 
             {/* Observações */}
-            <div className="space-y-2">
-              <Label htmlFor="observations">Observações</Label>
+            <div className="space-y-3">
+              <Label htmlFor="observations" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <div className="w-4 h-4 bg-gradient-to-br from-amber-500 to-orange-600 rounded flex items-center justify-center text-white text-xs">
+                  📝
+                </div>
+                Observações
+              </Label>
               <Textarea
                 id="observations"
                 value={observations}
                 onChange={(e) => setObservations(e.target.value)}
                 placeholder="Observações adicionais sobre o teste..."
-                rows={3}
+                rows={4}
+                className="border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 rounded-xl resize-none"
               />
             </div>
 
             {/* Resultados Calculados */}
             {calculations && (
-              <Card className="bg-green-50 border-green-200">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2 text-green-800">
-                    <Calculator className="h-4 w-4" />
+              <Card className="bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-2xl shadow-xl">
+                <CardHeader className="pb-6">
+                  <CardTitle className="text-xl font-bold text-emerald-800 flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-600 to-green-600 rounded-xl flex items-center justify-center text-white">
+                      <Calculator className="h-5 w-5" />
+                    </div>
                     Resultados Calculados
                   </CardTitle>
+                  <CardDescription className="text-emerald-700 font-medium">
+                    Análise completa dos parâmetros de treinamento calculados
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                    <div className="bg-white p-3 rounded border">
-                      <span className="font-medium text-green-800">Distância de Treino:</span>
-                      <div className="text-lg font-bold text-green-900">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-emerald-200 shadow-lg hover:shadow-xl transition-all duration-300">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center text-white text-sm">
+                          📏
+                        </div>
+                        <span className="text-sm font-bold text-slate-700">Distância de Treino</span>
+                      </div>
+                      <div className="text-2xl font-black text-green-600">
                         {calculations.trainingDistance.toFixed(1)}m
                       </div>
                     </div>
-                    <div className="bg-white p-3 rounded border">
-                      <span className="font-medium text-green-800">Intensidade de Treinamento:</span>
-                      <div className="text-lg font-bold text-green-900">
+                    <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white text-sm">
+                          ⚡
+                        </div>
+                        <span className="text-sm font-bold text-slate-700">Intensidade de Treinamento</span>
+                      </div>
+                      <div className="text-2xl font-black text-blue-600">
                         {calculations.trainingIntensity.toFixed(2)} ml/kg/min
                       </div>
                     </div>
-                    <div className="bg-white p-3 rounded border">
-                      <span className="font-medium text-green-800">Velocidade do Treino:</span>
-                      <div className="text-lg font-bold text-green-900">
+                    <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-purple-200 shadow-lg hover:shadow-xl transition-all duration-300">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-violet-600 rounded-lg flex items-center justify-center text-white text-sm">
+                          🏃‍♂️
+                        </div>
+                        <span className="text-sm font-bold text-slate-700">Velocidade do Treino</span>
+                      </div>
+                      <div className="text-2xl font-black text-purple-600">
                         {calculations.trainingVelocity.toFixed(2)} m/min
                       </div>
                     </div>
-                    <div className="bg-white p-3 rounded border">
-                      <span className="font-medium text-green-800">Consumo Total de O2:</span>
-                      <div className="text-lg font-bold text-green-900">
+                    <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-orange-200 shadow-lg hover:shadow-xl transition-all duration-300">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-amber-600 rounded-lg flex items-center justify-center text-white text-sm">
+                          🫁
+                        </div>
+                        <span className="text-sm font-bold text-slate-700">Consumo Total de O2</span>
+                      </div>
+                      <div className="text-2xl font-black text-orange-600">
                         {calculations.totalO2Consumption.toFixed(2)} L
                       </div>
                     </div>
-                    <div className="bg-white p-3 rounded border">
-                      <span className="font-medium text-green-800">Gasto Calórico:</span>
-                      <div className="text-lg font-bold text-green-900">
+                    <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-red-200 shadow-lg hover:shadow-xl transition-all duration-300">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-rose-600 rounded-lg flex items-center justify-center text-white text-sm">
+                          🔥
+                        </div>
+                        <span className="text-sm font-bold text-slate-700">Gasto Calórico</span>
+                      </div>
+                      <div className="text-2xl font-black text-red-600">
                         {calculations.caloricExpenditure.toFixed(0)} Cal
                       </div>
                     </div>
-                    <div className="bg-white p-3 rounded border">
-                      <span className="font-medium text-green-800">Peso Perdido:</span>
-                      <div className="text-lg font-bold text-green-900">
+                    <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-pink-200 shadow-lg hover:shadow-xl transition-all duration-300">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-rose-600 rounded-lg flex items-center justify-center text-white text-sm">
+                          ⚖️
+                        </div>
+                        <span className="text-sm font-bold text-slate-700">Peso Perdido</span>
+                      </div>
+                      <div className="text-2xl font-black text-pink-600">
                         {calculations.weightLoss.toFixed(1)}g
                       </div>
                     </div>
@@ -435,23 +524,34 @@ export default function PerformanceEvaluationForm({ students = [], selectedStude
               </Card>
             )}
 
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isLoading || !selectedEvaluatee || !selectedCooperTest || !intensityPercentage || !trainingTime || !selectedEvaluateeData?.weight}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Criando Avaliação...
-                </>
-              ) : (
-                'Criar Avaliação de Desempenho'
-              )}
-            </Button>
+            <div className="pt-6 border-t border-slate-200">
+              <Button 
+                type="submit" 
+                className="w-full h-14 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]" 
+                disabled={isLoading || !selectedEvaluatee || !selectedCooperTest || !intensityPercentage || !trainingTime || !selectedEvaluateeData?.weight}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+                    Criando Avaliação...
+                  </>
+                ) : (
+                  <>
+                    <div className="mr-3 w-5 h-5 bg-white/20 rounded-full flex items-center justify-center text-sm">
+                      ✨
+                    </div>
+                    Criar Avaliação de Desempenho
+                  </>
+                )}
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
+        </div>
+      </div>
     </div>
   )
 }
+
+export default memo(PerformanceEvaluationForm)

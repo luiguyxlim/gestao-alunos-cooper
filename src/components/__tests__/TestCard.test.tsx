@@ -89,8 +89,9 @@ describe('TestCard', () => {
   it('displays test type correctly', () => {
     render(<TestCard test={mockTest} />)
     
-    // Check if test type is displayed
-    expect(screen.getByText(/Físico/)).toBeInTheDocument()
+    // Check if test type is displayed - handle multiple occurrences
+    const physicoElements = screen.getAllByText('Físico')
+    expect(physicoElements.length).toBeGreaterThan(0)
   })
 
   it('displays score with appropriate color coding', () => {

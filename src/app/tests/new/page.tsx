@@ -5,7 +5,7 @@ import ResponsiveNavigation from '@/components/ResponsiveNavigation'
 
 interface NewTestPageProps {
   searchParams: Promise<{
-    student_id?: string
+    evaluatee_id?: string
     type?: string
   }>
 }
@@ -22,7 +22,7 @@ export default async function NewTestPage({ searchParams }: NewTestPageProps) {
   }
 
   const resolvedSearchParams = await searchParams
-  const selectedStudentId = resolvedSearchParams.student_id
+  const selectedStudentId = resolvedSearchParams.evaluatee_id
   const testType = resolvedSearchParams.type
 
   // Se não há tipo selecionado, mostrar página de seleção
@@ -34,7 +34,7 @@ export default async function NewTestPage({ searchParams }: NewTestPageProps) {
         <main className="max-w-4xl mx-auto py-4 px-4 sm:py-6 sm:px-6 lg:px-8">
           <div className="mb-6">
             <Link
-              href={selectedStudentId ? `/tests?student_id=${selectedStudentId}` : '/tests'}
+              href={selectedStudentId ? `/tests?evaluatee_id=${selectedStudentId}` : '/tests'}
               className="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-500"
             >
               <svg className="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -56,7 +56,7 @@ export default async function NewTestPage({ searchParams }: NewTestPageProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Teste de Cooper */}
                 <Link
-                  href={`/tests/new?type=cooper${selectedStudentId ? `&student_id=${selectedStudentId}` : ''}`}
+                  href={`/tests/new?type=cooper${selectedStudentId ? `&evaluatee_id=${selectedStudentId}` : ''}`}
                   className="group relative bg-white p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all duration-200"
                 >
                   <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mb-4 group-hover:bg-blue-200 transition-colors">
@@ -77,7 +77,7 @@ export default async function NewTestPage({ searchParams }: NewTestPageProps) {
 
                 {/* Avaliação de Desempenho */}
                 <Link
-                  href={`/tests/new?type=performance${selectedStudentId ? `&student_id=${selectedStudentId}` : ''}`}
+                  href={`/tests/new?type=performance${selectedStudentId ? `&evaluatee_id=${selectedStudentId}` : ''}`}
                   className="group relative bg-white p-6 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:shadow-md transition-all duration-200"
                 >
                   <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg mb-4 group-hover:bg-green-200 transition-colors">
@@ -108,14 +108,14 @@ export default async function NewTestPage({ searchParams }: NewTestPageProps) {
 
   // Se tipo é Cooper, redirecionar para a página específica
   if (testType === 'cooper') {
-    redirect(`/tests/cooper/new${selectedStudentId ? `?student_id=${selectedStudentId}` : ''}`)
+    redirect(`/tests/cooper/new${selectedStudentId ? `?evaluatee_id=${selectedStudentId}` : ''}`)
   }
 
   // Se tipo é performance, redirecionar para a página específica
   if (testType === 'performance') {
-    redirect(`/tests/performance-evaluation/new${selectedStudentId ? `?student_id=${selectedStudentId}` : ''}`)
+    redirect(`/tests/performance-evaluation/new${selectedStudentId ? `?evaluatee_id=${selectedStudentId}` : ''}`)
   }
 
   // Tipo inválido, redirecionar para seleção
-  redirect(`/tests/new${selectedStudentId ? `?student_id=${selectedStudentId}` : ''}`)
+  redirect(`/tests/new${selectedStudentId ? `?evaluatee_id=${selectedStudentId}` : ''}`)
 }

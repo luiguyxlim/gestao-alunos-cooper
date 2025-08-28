@@ -1,4 +1,3 @@
-const CACHE_NAME = 'cooper-pro-v2'
 const STATIC_CACHE = 'cooper-pro-static-v2'
 const DYNAMIC_CACHE = 'cooper-pro-dynamic-v2'
 
@@ -16,19 +15,14 @@ const urlsToCache = [
   '/cooper-pro-logo.svg'
 ]
 
-const OFFLINE_PAGE = '/offline.html'
-
 // Install event - cache resources
 self.addEventListener('install', (event) => {
-  console.log('Service Worker installing...')
   event.waitUntil(
     Promise.all([
       caches.open(STATIC_CACHE).then((cache) => {
-        console.log('Caching static resources')
         return cache.addAll(urlsToCache)
       }),
       caches.open(DYNAMIC_CACHE).then((cache) => {
-        console.log('Dynamic cache ready')
         return cache
       })
     ])
@@ -78,7 +72,6 @@ async function networkFirstStrategy(request) {
     }
     return networkResponse
   } catch (error) {
-    console.log('Network failed, trying cache:', error)
     const cachedResponse = await caches.match(request)
     if (cachedResponse) {
       return cachedResponse
@@ -106,7 +99,6 @@ async function cacheFirstStrategy(request) {
     }
     return networkResponse
   } catch (error) {
-    console.log('Failed to fetch asset:', error)
     return new Response('Asset not available offline', { status: 503 })
   }
 }
@@ -115,10 +107,16 @@ async function cacheFirstStrategy(request) {
 async function staleWhileRevalidateStrategy(request) {
   const cachedResponse = await caches.match(request)
   
-  const fetchPromise = fetch(request).then(networkResponse => {
+  const fetchPromise = fetch(request).then(async networkResponse => {
     if (networkResponse.ok) {
-      const cache = caches.open(DYNAMIC_CACHE)
-      cache.then(c => c.put(request, networkResponse.clone()))
+      try {
+        const cache = await caches.open(DYNAMIC_CACHE)
+        // Clone the response before using it
+        const responseClone = networkResponse.clone()
+        await cache.put(request, responseClone)
+      } catch (error) {
+        // Silently handle cache errors
+      }
     }
     return networkResponse
   }).catch(() => cachedResponse)
@@ -136,7 +134,6 @@ async function navigationHandler(request) {
     }
     return networkResponse
   } catch (error) {
-    console.log('Navigation failed, trying cache:', error)
     const cachedResponse = await caches.match(request)
     if (cachedResponse) {
       return cachedResponse
@@ -182,7 +179,6 @@ async function navigationHandler(request) {
 
 // Activate event - clean up old caches and claim clients
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker activating...')
   event.waitUntil(
     Promise.all([
       // Clean up old caches
@@ -190,7 +186,6 @@ self.addEventListener('activate', (event) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
             if (![STATIC_CACHE, DYNAMIC_CACHE].includes(cacheName)) {
-              console.log('Deleting old cache:', cacheName)
               return caches.delete(cacheName)
             }
           })
@@ -205,7 +200,6 @@ self.addEventListener('activate', (event) => {
 // Background sync for offline actions
 self.addEventListener('sync', (event) => {
   if (event.tag === 'background-sync') {
-    console.log('Background sync triggered')
     // Handle background sync logic here
   }
 })

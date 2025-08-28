@@ -39,7 +39,7 @@ export interface UpdateStudentData extends CreateStudentData {
   active?: boolean
 }
 
-// Buscar todos os alunos do usuário
+// Buscar todos os avaliandos do usuário
 export async function getStudents(): Promise<Student[]> {
   const supabase = await createServerSupabaseClient()
   
@@ -57,7 +57,7 @@ export async function getStudents(): Promise<Student[]> {
     .order('name')
 
   if (error) {
-    console.error('Erro ao buscar alunos:', error)
+    console.error('Erro ao buscar avaliandos:', error)
     // Se a tabela não existe, retorna array vazio
     if (error.code === 'PGRST116' || error.code === 'PGRST205' || error.message?.includes('Could not find the table') || error.message?.includes('relation "public.evaluatees" does not exist')) {
       console.warn('Tabela evaluatees não encontrada. Execute o script supabase-setup.sql no SQL Editor do Supabase.')
@@ -69,7 +69,7 @@ export async function getStudents(): Promise<Student[]> {
   return data || []
 }
 
-// Buscar um aluno específico
+// Buscar um avaliando específico
 export async function getStudent(id: string): Promise<Student | null> {
   const supabase = await createServerSupabaseClient()
   
@@ -87,14 +87,14 @@ export async function getStudent(id: string): Promise<Student | null> {
     .single()
 
   if (error) {
-    console.error('Erro ao buscar aluno:', error)
+    console.error('Erro ao buscar avaliando:', error)
     return null
   }
 
   return data
 }
 
-// Criar novo aluno
+// Criar novo avaliando
 export async function createStudent(formData: FormData) {
   const supabase = await createServerSupabaseClient()
   
@@ -138,7 +138,7 @@ export async function createStudent(formData: FormData) {
   redirect('/evaluatees')
 }
 
-// Atualizar aluno
+// Atualizar avaliando
 export async function updateStudent(id: string, formData: FormData) {
   const supabase = await createServerSupabaseClient()
   
@@ -182,7 +182,7 @@ export async function updateStudent(id: string, formData: FormData) {
   redirect('/evaluatees')
 }
 
-// Desativar aluno (soft delete)
+// Desativar avaliando (soft delete)
 export async function deactivateStudent(id: string) {
   const supabase = await createServerSupabaseClient()
   
@@ -206,7 +206,7 @@ export async function deactivateStudent(id: string) {
   revalidatePath('/evaluatees')
 }
 
-// Reativar aluno
+// Reativar avaliando
 export async function reactivateStudent(id: string) {
   const supabase = await createServerSupabaseClient()
   
@@ -230,7 +230,7 @@ export async function reactivateStudent(id: string) {
   revalidatePath('/evaluatees')
 }
 
-// Deletar aluno permanentemente
+// Deletar avaliando permanentemente
 export async function deleteStudent(id: string) {
   const supabase = await createServerSupabaseClient()
   
@@ -247,8 +247,8 @@ export async function deleteStudent(id: string) {
     .eq('user_id', user.id)
 
   if (error) {
-    console.error('Erro ao deletar aluno:', error)
-    throw new Error('Erro ao deletar aluno')
+    console.error('Erro ao deletar avaliando:', error)
+    throw new Error('Erro ao deletar avaliando')
   }
 
   revalidatePath('/evaluatees')

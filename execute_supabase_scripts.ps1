@@ -134,12 +134,13 @@ SELECT
     pt.test_date,
     pt.cooper_test_distance,
     pt.vo2_max,
+    pt.evaluatee_id,
     e.name as evaluatee_name
 FROM performance_tests pt
-LEFT JOIN evaluatees e ON pt.student_id = e.id
+LEFT JOIN evaluatees e ON pt.evaluatee_id = e.id
 WHERE pt.test_type = ''cooper_vo2''
 ORDER BY pt.created_at DESC
-LIMIT 5;
+LIMIT 10;
 '@
 
 Invoke-SupabaseQuery -Query $cooperTestsQuery -Description "Verificacao de testes de Cooper existentes"

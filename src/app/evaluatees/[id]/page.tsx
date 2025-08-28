@@ -21,7 +21,8 @@ export default async function EvaluateePage({ params }: EvaluateePageProps) {
     redirect('/login')
   }
 
-  const student = await getStudent(params.id)
+  const { id } = await params
+  const student = await getStudent(id)
 
   if (!student) {
     notFound()
@@ -51,7 +52,7 @@ export default async function EvaluateePage({ params }: EvaluateePageProps) {
           <div className="flex justify-between h-16">
             <div className="flex items-center space-x-8">
               <Link href="/dashboard" className="text-xl font-semibold text-gray-900">
-                Sistema de Gestão de Alunos
+                Cooper Pro
               </Link>
               <div className="hidden md:flex space-x-4">
                 <Link
@@ -115,7 +116,7 @@ export default async function EvaluateePage({ params }: EvaluateePageProps) {
                     Editar
                   </Link>
                   <Link
-                    href={`/tests/new?student_id=${student.id}`}
+                    href={`/tests/new?evaluatee_id=${student.id}`}
                     className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                   >
                     Novo Teste
@@ -227,7 +228,7 @@ export default async function EvaluateePage({ params }: EvaluateePageProps) {
                     <p className="text-sm text-gray-500">Histórico de avaliações do avaliando</p>
                   </div>
                   <Link
-                    href={`/tests?student_id=${student.id}`}
+                    href={`/tests?evaluatee_id=${student.id}`}
                     className="text-indigo-600 hover:text-indigo-500 text-sm font-medium"
                   >
                     Ver todos os testes →

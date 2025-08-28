@@ -21,14 +21,18 @@ export async function getTests(studentId?: string) {
       *,
       evaluatees (
         id,
-        name
+        name,
+        birth_date,
+        gender,
+        email,
+        phone
       )
     `)
     .eq('user_id', user.id)
     .order('test_date', { ascending: false })
 
   if (studentId) {
-    query = query.eq('student_id', studentId)
+    query = query.eq('evaluatee_id', studentId)
   }
 
   const { data: tests, error } = await query
@@ -58,7 +62,11 @@ export async function getTest(id: string) {
       *,
       evaluatees (
         id,
-        name
+        name,
+        birth_date,
+        gender,
+        email,
+        phone
       )
     `)
     .eq('id', id)
@@ -84,7 +92,7 @@ export async function createTest(formData: FormData) {
     redirect('/login')
   }
 
-  const studentId = formData.get('student_id') as string
+  const studentId = formData.get('evaluatee_id') as string
   const testDate = formData.get('test_date') as string
   const testType = formData.get('test_type') as string
   const notes = formData.get('notes') as string
@@ -120,7 +128,7 @@ export async function createTest(formData: FormData) {
       .from('performance_tests')
       .insert({
         user_id: user.id,
-        student_id: studentId,
+        evaluatee_id: studentId,
         test_date: testDate,
         test_type: testType,
         notes,
@@ -161,7 +169,7 @@ export async function updateTest(formData: FormData) {
   }
 
   const id = formData.get('id') as string
-  const studentId = formData.get('student_id') as string
+  const studentId = formData.get('evaluatee_id') as string
   const testDate = formData.get('test_date') as string
   const testType = formData.get('test_type') as string
   const notes = formData.get('notes') as string
@@ -176,7 +184,18 @@ export async function updateTest(formData: FormData) {
   const balance = formData.get('balance') ? parseFloat(formData.get('balance') as string) : null
   const power = formData.get('power') ? parseFloat(formData.get('power') as string) : null
   const reaction_time = formData.get('reaction_time') ? parseFloat(formData.get('reaction_time') as string) : null
-  const vo2_max = formData.get('vo2_max') ? parseFloat(formData.get('vo2_max') as string) : null
+  let vo2_max = formData.get('vo2_max') ? parseFloat(formData.get('vo2_max') as string) : null
+  
+  // Dados específicos do teste de Cooper
+  const cooper_distance = formData.get('cooper_distance') ? parseFloat(formData.get('cooper_distance') as string) : null
+  const cooper_age = formData.get('cooper_age') ? parseInt(formData.get('cooper_age') as string) : null
+  const cooper_gender = formData.get('cooper_gender') as string
+  
+  // Se for teste de Cooper, calcular VO2 máximo automaticamente
+  if (testType === 'cooper_vo2' && cooper_distance && cooper_age && cooper_gender) {
+    // Fórmula do Cooper: VO2max = (distância em metros - 504.9) / 44.73
+    vo2_max = Math.max(0, Math.round(((cooper_distance - 504.9) / 44.73) * 100) / 100)
+  }
 
   if (!id || !studentId || !testDate || !testType) {
     throw new Error('Campos obrigatórios não preenchidos')
@@ -185,7 +204,7 @@ export async function updateTest(formData: FormData) {
   const { error } = await supabase
     .from('performance_tests')
     .update({
-      student_id: studentId,
+      evaluatee_id: studentId,
       test_date: testDate,
       test_type: testType,
       notes,
@@ -198,7 +217,8 @@ export async function updateTest(formData: FormData) {
       balance,
       power,
       reaction_time,
-      vo2_max
+      vo2_max,
+      cooper_test_distance: cooper_distance
     })
     .eq('id', id)
     .eq('user_id', user.id)
@@ -214,7 +234,7 @@ export async function updateTest(formData: FormData) {
   redirect(`/tests/${id}`)
 }
 
-export async function deleteTest(id: string) {
+export async function deleteTest(formData: FormData | { id: string }) {
   const supabase = await createServerSupabaseClient()
   
   const {
@@ -225,13 +245,20 @@ export async function deleteTest(id: string) {
     redirect('/login')
   }
 
-  // Primeiro, buscar o teste para obter o student_id
-  const { data: test } = await supabase
-    .from('performance_tests')
-    .select('student_id')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single()
+  // Suportar tanto FormData quanto objeto simples
+  let id: string
+  if (formData instanceof FormData) {
+    id = formData.get('id') as string
+  } else if (typeof formData === 'object' && formData.id) {
+    id = formData.id
+  } else {
+    console.error('🔴 [SERVER ACTION] Tipo de dados inválido:', typeof formData, formData)
+    throw new Error('Dados inválidos para exclusão')
+  }
+  
+  if (!id) {
+    throw new Error('ID do teste é obrigatório')
+  }
 
   const { error } = await supabase
     .from('performance_tests')
@@ -240,14 +267,11 @@ export async function deleteTest(id: string) {
     .eq('user_id', user.id)
 
   if (error) {
-    console.error('Error deleting test:', error)
-    throw new Error('Erro ao deletar teste')
+    console.error('🔴 [SERVER ACTION] Erro ao excluir teste:', error)
+    throw new Error('Erro ao excluir teste')
   }
 
   revalidatePath('/tests')
-  if (test?.student_id) {
-    revalidatePath(`/evaluatees/${test.student_id}`)
-  }
   redirect('/tests')
 }
 
@@ -272,7 +296,7 @@ export async function getTestsStats(studentId?: string) {
     .eq('user_id', user.id)
 
   if (studentId) {
-    query = query.eq('student_id', studentId)
+    query = query.eq('evaluatee_id', studentId)
   }
 
   const { data: tests, error } = await query

@@ -3,7 +3,7 @@
 
 /**
  * Calcula a distância de treino baseada no VO2 máximo e percentual de intensidade
- * Fórmula: Distância Percorrida = 504.1 / 44.8
+ * Fórmula baseada na fórmula inversa do Cooper: Distância = (VO2max * 44.73) + 504.9
  * @param vo2Max - VO2 máximo do avaliando
  * @param intensityPercentage - Percentual de intensidade (0-100)
  * @returns Distância de treino em metros
@@ -12,23 +12,21 @@ export function calculateTrainingDistance(
   vo2Max: number,
   intensityPercentage: number
 ): number {
-  // Fórmula base: 504.1 / 44.8 = distância base
-  const baseDistance = 504.1 / 44.8;
+  // Fórmula inversa do Cooper para calcular distância baseada no VO2
+  const targetVO2 = vo2Max * (intensityPercentage / 100);
+  const trainingDistance = (targetVO2 * 44.73) + 504.9;
   
-  // Ajustar pela intensidade e VO2
-  const adjustedDistance = (vo2Max * intensityPercentage / 100) * baseDistance;
-  
-  return Math.round(adjustedDistance);
+  return Math.round(trainingDistance);
 }
 
 /**
  * Calcula o VO2 máximo baseado na distância percorrida no teste de Cooper
- * Fórmula: VO2max = Distância Percorrida - 504.1 / 44.8
+ * Fórmula: VO2max = (Distância Percorrida - 504.9) / 44.73
  * @param cooperDistance - Distância percorrida no teste de Cooper em metros
  * @returns VO2 máximo calculado
  */
 export function calculateVO2Max(cooperDistance: number): number {
-  const vo2Max = (cooperDistance - 504.1) / 44.8;
+  const vo2Max = (cooperDistance - 504.9) / 44.73;
   return Math.round(vo2Max * 100) / 100; // Arredondar para 2 casas decimais
 }
 

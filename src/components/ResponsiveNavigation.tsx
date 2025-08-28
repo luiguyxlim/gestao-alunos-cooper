@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { memo } from 'react'
 import MobileNavigation from './MobileNavigation'
 import LogoutButton from './LogoutButton'
 
@@ -14,7 +15,7 @@ interface ResponsiveNavigationProps {
   } | null
 }
 
-export default function ResponsiveNavigation({ user }: ResponsiveNavigationProps) {
+function ResponsiveNavigation({ user }: ResponsiveNavigationProps) {
   const pathname = usePathname()
 
   const navigation = [
@@ -75,3 +76,5 @@ export default function ResponsiveNavigation({ user }: ResponsiveNavigationProps
     </nav>
   )
 }
+
+export default memo(ResponsiveNavigation)

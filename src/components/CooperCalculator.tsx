@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, memo } from 'react'
 
 interface Student {
   id: string
@@ -13,7 +13,7 @@ interface CooperCalculatorProps {
   students: Student[]
 }
 
-export default function CooperCalculator({ students }: CooperCalculatorProps) {
+function CooperCalculator({ students }: CooperCalculatorProps) {
   const [results, setResults] = useState<{
     vo2Max: number
     classification: string
@@ -22,7 +22,7 @@ export default function CooperCalculator({ students }: CooperCalculatorProps) {
 
   const calculateVO2 = () => {
     const distanceInput = document.getElementById('cooper_distance') as HTMLInputElement
-    const studentSelect = document.getElementById('student_id') as HTMLSelectElement
+    const studentSelect = document.getElementById('evaluatee_id') as HTMLSelectElement
     const vo2Input = document.getElementById('vo2_max') as HTMLInputElement
     
     if (!distanceInput || !studentSelect || !vo2Input) {
@@ -149,3 +149,5 @@ export default function CooperCalculator({ students }: CooperCalculatorProps) {
     </>
   )
 }
+
+export default memo(CooperCalculator)

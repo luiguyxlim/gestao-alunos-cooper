@@ -82,7 +82,10 @@ export default function MobileNavigation({ user }: MobileNavigationProps) {
       {/* Mobile menu overlay */}
       {isOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
-          <div className="fixed inset-0 bg-black bg-opacity-25" onClick={() => setIsOpen(false)} />
+          <div 
+            className="fixed inset-0 bg-gray-900 bg-opacity-30" 
+            onClick={() => setIsOpen(false)}
+          />
           <div className="fixed top-0 right-0 bottom-0 w-full max-w-sm bg-white shadow-xl">
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <h2 className="text-lg font-medium text-gray-900">Menu</h2>

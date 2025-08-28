@@ -85,7 +85,7 @@ export type Database = {
       performance_tests: {
         Row: {
           id: string
-          student_id: string
+          evaluatee_id: string
           user_id: string
           test_date: string
           test_type: string
@@ -126,7 +126,7 @@ export type Database = {
         }
         Insert: {
           id?: string
-          student_id: string
+          evaluatee_id: string
           user_id: string
           test_date: string
           test_type: string
@@ -167,7 +167,7 @@ export type Database = {
         }
         Update: {
           id?: string
-          student_id?: string
+          evaluatee_id?: string
           user_id?: string
           test_date?: string
           test_type?: string

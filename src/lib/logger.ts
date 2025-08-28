@@ -36,7 +36,7 @@ class Logger {
   }
 
   private addLog(entry: LogEntry) {
-    this.logs.push(entry);
+    this.logs = [...this.logs, entry];
     
     // Manter apenas os últimos logs
     if (this.logs.length > this.maxLogs) {

@@ -21,7 +21,8 @@ export default async function EditEvaluateePage({ params }: EditEvaluateePagePro
     redirect('/login')
   }
 
-  const student = await getStudent(params.id)
+  const { id } = await params
+  const student = await getStudent(id)
 
   if (!student) {
     notFound()
@@ -39,7 +40,7 @@ export default async function EditEvaluateePage({ params }: EditEvaluateePagePro
           <div className="flex justify-between h-16">
             <div className="flex items-center space-x-8">
               <Link href="/dashboard" className="text-xl font-semibold text-gray-900">
-                Sistema de Gestão de Alunos
+                Cooper Pro
               </Link>
               <div className="hidden md:flex space-x-4">
                 <Link

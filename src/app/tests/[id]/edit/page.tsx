@@ -22,7 +22,8 @@ export default async function EditTestPage({ params }: EditTestPageProps) {
     redirect('/login')
   }
 
-  const test = await getTest(params.id)
+  const { id } = await params
+  const test = await getTest(id)
   const students = await getStudents()
 
   if (!test) {
@@ -36,6 +37,7 @@ export default async function EditTestPage({ params }: EditTestPageProps) {
 
   const getTestTypeLabel = (type: string) => {
     const types: { [key: string]: string } = {
+      'cooper_vo2': 'Cooper VO2 (Teste de 12 minutos)',
       'physical': 'Físico',
       'technical': 'Técnico',
       'tactical': 'Tático',
@@ -43,7 +45,7 @@ export default async function EditTestPage({ params }: EditTestPageProps) {
       'medical': 'Médico',
       'other': 'Outro'
     }
-    return types[type] || type
+    return types[type] || 'Tipo não identificado'
   }
 
   return (
@@ -53,7 +55,7 @@ export default async function EditTestPage({ params }: EditTestPageProps) {
           <div className="flex justify-between h-16">
             <div className="flex items-center space-x-8">
               <Link href="/dashboard" className="text-xl font-semibold text-gray-900">
-                Sistema de Gestão de Alunos
+                Cooper Pro
               </Link>
               <div className="hidden md:flex space-x-4">
                 <Link
@@ -114,12 +116,12 @@ export default async function EditTestPage({ params }: EditTestPageProps) {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label htmlFor="student_id" className="block text-sm font-medium text-gray-700">
-                      Avaliando *
-                    </label>
-                    <select
-                      name="student_id"
-                      id="student_id"
+                    <label htmlFor="evaluatee_id" className="block text-sm font-medium text-gray-700">
+                    Avaliando
+                  </label>
+                  <select
+                    name="evaluatee_id"
+                    id="evaluatee_id"
                       required
                       defaultValue={test.evaluatees.id}
                       className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
@@ -159,186 +161,240 @@ export default async function EditTestPage({ params }: EditTestPageProps) {
                       className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     >
                       <option value="cooper_vo2">Cooper VO2 (Teste de 12 minutos)</option>
+                      <option value="physical">Físico</option>
+                      <option value="technical">Técnico</option>
+                      <option value="tactical">Tático</option>
+                      <option value="psychological">Psicológico</option>
+                      <option value="medical">Médico</option>
+                      <option value="other">Outro</option>
                     </select>
                   </div>
                 </div>
 
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Métricas de Performance</h3>
-                  <p className="text-sm text-gray-500 mb-4">
-                    Avalie cada métrica de 0 a 10 (deixe em branco se não aplicável)
-                  </p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
-                      <label htmlFor="speed" className="block text-sm font-medium text-gray-700">
-                        Velocidade
-                      </label>
-                      <input
-                        type="number"
-                        name="speed"
-                        id="speed"
-                        min="0"
-                        max="10"
-                        step="0.1"
-                        defaultValue={test.speed || ''}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        placeholder="0.0 - 10.0"
-                      />
-                    </div>
+                {/* Campos específicos para Teste de Cooper */}
+                {test.test_type === 'cooper_vo2' ? (
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">Dados do Teste de Cooper</h3>
+                    <p className="text-sm text-gray-500 mb-4">
+                      Edite a distância percorrida em 12 minutos e o VO2 máximo calculado.
+                    </p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="cooper_distance" className="block text-sm font-medium text-gray-700">
+                          Distância Percorrida (metros) *
+                        </label>
+                        <input
+                          type="number"
+                          name="cooper_distance"
+                          id="cooper_distance"
+                          min="500"
+                          max="5000"
+                          step="1"
+                          defaultValue={test.cooper_distance || ''}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                          placeholder="Ex: 2400"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Distância entre 500 e 5000 metros</p>
+                      </div>
 
-                    <div>
-                      <label htmlFor="agility" className="block text-sm font-medium text-gray-700">
-                        Agilidade
-                      </label>
-                      <input
-                        type="number"
-                        name="agility"
-                        id="agility"
-                        min="0"
-                        max="10"
-                        step="0.1"
-                        defaultValue={test.agility || ''}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        placeholder="0.0 - 10.0"
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="strength" className="block text-sm font-medium text-gray-700">
-                        Força
-                      </label>
-                      <input
-                        type="number"
-                        name="strength"
-                        id="strength"
-                        min="0"
-                        max="10"
-                        step="0.1"
-                        defaultValue={test.strength || ''}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        placeholder="0.0 - 10.0"
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="endurance" className="block text-sm font-medium text-gray-700">
-                        Resistência
-                      </label>
-                      <input
-                        type="number"
-                        name="endurance"
-                        id="endurance"
-                        min="0"
-                        max="10"
-                        step="0.1"
-                        defaultValue={test.endurance || ''}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        placeholder="0.0 - 10.0"
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="flexibility" className="block text-sm font-medium text-gray-700">
-                        Flexibilidade
-                      </label>
-                      <input
-                        type="number"
-                        name="flexibility"
-                        id="flexibility"
-                        min="0"
-                        max="10"
-                        step="0.1"
-                        defaultValue={test.flexibility || ''}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        placeholder="0.0 - 10.0"
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="coordination" className="block text-sm font-medium text-gray-700">
-                        Coordenação
-                      </label>
-                      <input
-                        type="number"
-                        name="coordination"
-                        id="coordination"
-                        min="0"
-                        max="10"
-                        step="0.1"
-                        defaultValue={test.coordination || ''}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        placeholder="0.0 - 10.0"
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="balance" className="block text-sm font-medium text-gray-700">
-                        Equilíbrio
-                      </label>
-                      <input
-                        type="number"
-                        name="balance"
-                        id="balance"
-                        min="0"
-                        max="10"
-                        step="0.1"
-                        defaultValue={test.balance || ''}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        placeholder="0.0 - 10.0"
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="power" className="block text-sm font-medium text-gray-700">
-                        Potência
-                      </label>
-                      <input
-                        type="number"
-                        name="power"
-                        id="power"
-                        min="0"
-                        max="10"
-                        step="0.1"
-                        defaultValue={test.power || ''}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        placeholder="0.0 - 10.0"
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="reaction_time" className="block text-sm font-medium text-gray-700">
-                        Tempo de Reação (ms)
-                      </label>
-                      <input
-                        type="number"
-                        name="reaction_time"
-                        id="reaction_time"
-                        min="0"
-                        step="0.1"
-                        defaultValue={test.reaction_time || ''}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        placeholder="Ex: 250.5"
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="vo2_max" className="block text-sm font-medium text-gray-700">
-                        VO2 Max (ml/kg/min)
-                      </label>
-                      <input
-                        type="number"
-                        name="vo2_max"
-                        id="vo2_max"
-                        min="0"
-                        step="0.1"
-                        defaultValue={test.vo2_max || ''}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        placeholder="Ex: 45.2"
-                      />
+                      <div>
+                        <label htmlFor="vo2_max" className="block text-sm font-medium text-gray-700">
+                          VO2 Max (ml/kg/min)
+                        </label>
+                        <input
+                          type="number"
+                          name="vo2_max"
+                          id="vo2_max"
+                          min="0"
+                          step="0.1"
+                          defaultValue={test.vo2_max || ''}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                          placeholder="Ex: 45.2"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">VO2 máximo calculado</p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  /* Campos para outros tipos de teste */
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">Métricas de Performance</h3>
+                    <p className="text-sm text-gray-500 mb-4">
+                      Avalie cada métrica de 0 a 10 (deixe em branco se não aplicável)
+                    </p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div>
+                        <label htmlFor="speed" className="block text-sm font-medium text-gray-700">
+                          Velocidade
+                        </label>
+                        <input
+                          type="number"
+                          name="speed"
+                          id="speed"
+                          min="0"
+                          max="10"
+                          step="0.1"
+                          defaultValue={test.speed || ''}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                          placeholder="0.0 - 10.0"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="agility" className="block text-sm font-medium text-gray-700">
+                          Agilidade
+                        </label>
+                        <input
+                          type="number"
+                          name="agility"
+                          id="agility"
+                          min="0"
+                          max="10"
+                          step="0.1"
+                          defaultValue={test.agility || ''}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                          placeholder="0.0 - 10.0"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="strength" className="block text-sm font-medium text-gray-700">
+                          Força
+                        </label>
+                        <input
+                          type="number"
+                          name="strength"
+                          id="strength"
+                          min="0"
+                          max="10"
+                          step="0.1"
+                          defaultValue={test.strength || ''}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                          placeholder="0.0 - 10.0"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="endurance" className="block text-sm font-medium text-gray-700">
+                          Resistência
+                        </label>
+                        <input
+                          type="number"
+                          name="endurance"
+                          id="endurance"
+                          min="0"
+                          max="10"
+                          step="0.1"
+                          defaultValue={test.endurance || ''}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                          placeholder="0.0 - 10.0"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="flexibility" className="block text-sm font-medium text-gray-700">
+                          Flexibilidade
+                        </label>
+                        <input
+                          type="number"
+                          name="flexibility"
+                          id="flexibility"
+                          min="0"
+                          max="10"
+                          step="0.1"
+                          defaultValue={test.flexibility || ''}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                          placeholder="0.0 - 10.0"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="coordination" className="block text-sm font-medium text-gray-700">
+                          Coordenação
+                        </label>
+                        <input
+                          type="number"
+                          name="coordination"
+                          id="coordination"
+                          min="0"
+                          max="10"
+                          step="0.1"
+                          defaultValue={test.coordination || ''}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                          placeholder="0.0 - 10.0"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="balance" className="block text-sm font-medium text-gray-700">
+                          Equilíbrio
+                        </label>
+                        <input
+                          type="number"
+                          name="balance"
+                          id="balance"
+                          min="0"
+                          max="10"
+                          step="0.1"
+                          defaultValue={test.balance || ''}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                          placeholder="0.0 - 10.0"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="power" className="block text-sm font-medium text-gray-700">
+                          Potência
+                        </label>
+                        <input
+                          type="number"
+                          name="power"
+                          id="power"
+                          min="0"
+                          max="10"
+                          step="0.1"
+                          defaultValue={test.power || ''}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                          placeholder="0.0 - 10.0"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="reaction_time" className="block text-sm font-medium text-gray-700">
+                          Tempo de Reação (ms)
+                        </label>
+                        <input
+                          type="number"
+                          name="reaction_time"
+                          id="reaction_time"
+                          min="0"
+                          step="0.1"
+                          defaultValue={test.reaction_time || ''}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                          placeholder="Ex: 250.5"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="vo2_max" className="block text-sm font-medium text-gray-700">
+                          VO2 Max (ml/kg/min)
+                        </label>
+                        <input
+                          type="number"
+                          name="vo2_max"
+                          id="vo2_max"
+                          min="0"
+                          step="0.1"
+                          defaultValue={test.vo2_max || ''}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                          placeholder="Ex: 45.2"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
