@@ -24,7 +24,7 @@ export function calculateMaxMET(vo2Max: number): number {
 
 /**
  * Calcula a Fração do Treinamento (FT)
- * Fórmula: FT = MET Máx + (percentual / 100)
+ * Fórmula: FT = (MET Máx + percentual) / 100
  * @param maxMET - MET máximo
  * @param intensityPercentage - Percentual de intensidade como valor inteiro (ex: 80 para 80%)
  * @returns Fração do Treinamento
@@ -32,7 +32,7 @@ export function calculateMaxMET(vo2Max: number): number {
 export function calculateTrainingFraction(maxMET: number, intensityPercentage: number): number {
   // Garantir que o percentual seja tratado como valor inteiro
   const percentage = Math.round(intensityPercentage);
-  return Math.round((maxMET + (percentage / 100)) * 10000) / 10000;
+  return Math.round(((maxMET + percentage) / 100) * 10000) / 10000;
 }
 
 /**
