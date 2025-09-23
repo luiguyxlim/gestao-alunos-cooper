@@ -116,14 +116,14 @@ export default async function EditTestPage({ params }: EditTestPageProps) {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label htmlFor="evaluatee_id" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="student_id" className="block text-sm font-medium text-gray-700">
                     Avaliando
                   </label>
                   <select
-                    name="evaluatee_id"
-                    id="evaluatee_id"
+                    name="student_id"
+                    id="student_id"
                       required
-                      defaultValue={test.evaluatees.id}
+                      defaultValue={test.students?.id || ''}
                       className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     >
                       <option value="">Selecione um avaliando...</option>

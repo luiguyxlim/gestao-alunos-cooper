@@ -252,15 +252,15 @@ export default function NewCooperTestPage({ searchParams }: NewCooperTestPagePro
               <div className="space-y-6 sm:space-y-8">
                 <div className="grid grid-cols-1 gap-6 sm:gap-8 sm:grid-cols-2">
                   <div className="sm:col-span-2">
-                    <label htmlFor="evaluatee_id" className="block text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                    <label htmlFor="student_id" className="block text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
                       <div className="w-4 h-4 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center text-white text-xs">
                         👤
                       </div>
                       Avaliando *
                     </label>
                     <select
-                      name="evaluatee_id"
-                      id="evaluatee_id"
+                      name="student_id"
+                      id="student_id"
                       required
                       defaultValue={selectedStudentId || ''}
                       className="block w-full px-4 py-3 border-2 border-slate-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-base sm:text-sm bg-white/80 backdrop-blur-sm transition-all duration-200"

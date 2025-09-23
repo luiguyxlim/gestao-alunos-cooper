@@ -135,7 +135,7 @@ function PerformanceEvaluationForm({ students = [], selectedStudentId }: Perform
       }
 
       await createPerformanceEvaluation({
-        evaluatee_id: selectedEvaluatee,
+        student_id: selectedEvaluatee,
         test_date: testDate,
         vo2_max: cooperTest.vo2_max,
         cooper_distance: cooperTest.cooper_test_distance,

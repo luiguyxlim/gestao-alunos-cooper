@@ -118,7 +118,7 @@ export async function createTest(formData: FormData) {
     redirect('/login')
   }
 
-  const studentId = formData.get('evaluatee_id') as string
+  const studentId = formData.get('student_id') as string
   const testDate = formData.get('test_date') as string
   const testType = formData.get('test_type') as string
   const notes = formData.get('notes') as string
@@ -195,7 +195,7 @@ export async function updateTest(formData: FormData) {
   }
 
   const id = formData.get('id') as string
-  const studentId = formData.get('evaluatee_id') as string
+  const studentId = formData.get('student_id') as string
   const testDate = formData.get('test_date') as string
   const testType = formData.get('test_type') as string
   const notes = formData.get('notes') as string
