@@ -7,7 +7,7 @@ import type {
 } from './supabase'
 
 type PerformanceTest = Database['public']['Tables']['performance_tests']['Row']
-type Student = Database['public']['Tables']['evaluatees']['Row']
+type Student = Database['public']['Tables']['students']['Row']
 
 // Tipos para métricas de performance
 export interface PerformanceMetrics {
@@ -110,7 +110,7 @@ export function calculatePerformanceMetrics(
     }
   }
 
-  const uniqueStudents = new Set(tests.map(t => t.evaluatee_id))
+  const uniqueStudents = new Set(tests.map(t => t.student_id))
   const vo2MaxValues = tests.map(t => t.vo2_max).filter(v => v !== null).sort((a, b) => a! - b!)
   const cooperDistanceValues = tests.map(t => t.cooper_test_distance).filter(v => v !== null).sort((a, b) => a! - b!)
 
@@ -166,7 +166,7 @@ export async function getGlobalPerformanceStats(
       cooper_test_distance,
       body_fat_percentage,
       muscle_mass,
-      evaluatee_id,
+      student_id,
       created_at
     `)
     .eq('user_id', userId)
@@ -205,7 +205,7 @@ export async function getGlobalPerformanceStats(
   }
 
   // Calcular estatísticas
-  const uniqueEvaluatees = new Set(evaluations.map(e => e.evaluatee_id))
+  const uniqueEvaluatees = new Set(evaluations.map(e => e.student_id))
   const validVo2Max = evaluations.filter(e => e.vo2_max !== null).map(e => e.vo2_max!)
   const validCooperDistance = evaluations.filter(e => e.cooper_test_distance !== null).map(e => e.cooper_test_distance!)
   const validBodyFat = evaluations.filter(e => e.body_fat_percentage !== null).map(e => e.body_fat_percentage!)
@@ -255,7 +255,7 @@ export async function getAgeGroupPerformanceStats(
       cooper_test_distance,
       body_fat_percentage,
       muscle_mass,
-      evaluatee_id,
+      student_id,
       created_at,
       students!inner (
         id,
@@ -314,7 +314,7 @@ export async function getAgeGroupPerformanceStats(
       user_id: userId,
       age_group: ageGroup,
       total_evaluations: groupEvaluations.length,
-      total_students: new Set(groupEvaluations.map(e => e.evaluatee_id)).size,
+      total_students: new Set(groupEvaluations.map(e => e.student_id)).size,
       avg_vo2_max: validVo2Max.length > 0 ? validVo2Max.reduce((a, b) => a + b, 0) / validVo2Max.length : null,
       avg_cooper_distance: validCooperDistance.length > 0 ? validCooperDistance.reduce((a, b) => a + b, 0) / validCooperDistance.length : null,
       avg_body_fat_percentage: validBodyFat.length > 0 ? validBodyFat.reduce((a, b) => a + b, 0) / validBodyFat.length : null,
@@ -383,7 +383,7 @@ export async function getPerformanceData(
         })
         .map(s => s.id)
       
-      testsQuery = testsQuery.in('evaluatee_id', filteredStudentIds)
+      testsQuery = testsQuery.in('student_id', filteredStudentIds)
       studentsQuery = studentsQuery.in('id', filteredStudentIds)
     }
   }

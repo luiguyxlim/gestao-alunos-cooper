@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  turbopack: {
+    // Força o Turbopack a considerar este diretório como root do workspace
+    root: __dirname,
+  },
 };
 
 export default nextConfig;

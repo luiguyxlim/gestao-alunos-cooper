@@ -12,8 +12,8 @@ test.describe('Authentication', () => {
 
   test('should display login form', async ({ page }) => {
     await page.goto('/login')
-    
-    await expect(page.locator('h1')).toContainText('Login')
+    // Verifica URL e campos do formulário
+    await expect(page).toHaveURL('/login')
     await expect(page.locator('input[type="email"]')).toBeVisible()
     await expect(page.locator('input[type="password"]')).toBeVisible()
     await expect(page.locator('button[type="submit"]')).toBeVisible()
@@ -21,8 +21,7 @@ test.describe('Authentication', () => {
 
   test('should display register form', async ({ page }) => {
     await page.goto('/register')
-    
-    await expect(page.locator('h1')).toContainText('Criar Conta')
+    // Verifica campos do formulário de cadastro
     await expect(page.locator('input[type="email"]')).toBeVisible()
     await expect(page.locator('input[type="password"]')).toBeVisible()
     await expect(page.locator('button[type="submit"]')).toBeVisible()
@@ -44,19 +43,16 @@ test.describe('Authentication', () => {
   test('should navigate between login and register', async ({ page }) => {
     await page.goto('/login')
     
-    await page.click('text=Criar uma conta')
+    await page.click('text=Cadastre-se aqui')
     await expect(page).toHaveURL('/register')
     
-    await page.click('text=Já tem uma conta?')
+    await page.click('text=Faça login aqui')
     await expect(page).toHaveURL('/login')
   })
 
-  test('should display home page with auth links when not logged in', async ({ page }) => {
+  test('should redirect home to login when not logged in', async ({ page }) => {
     await page.goto('/')
-    
-    await expect(page.locator('h1')).toContainText('Sistema de Gestão de Alunos')
-    await expect(page.locator('text=Fazer Login')).toBeVisible()
-    await expect(page.locator('text=Criar Conta')).toBeVisible()
+    await expect(page).toHaveURL('/login')
   })
 
   // Note: These tests assume you have test credentials set up

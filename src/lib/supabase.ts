@@ -45,47 +45,62 @@ export type Database = {
           updated_at?: string
         }
       }
-      evaluatees: {
+      students: {
         Row: {
           id: string
+          user_id: string
           name: string
           email: string | null
           phone: string | null
           birth_date: string | null
           gender: string | null
           weight: number | null
-          user_id: string
+          address: string | null
+          emergency_contact: string | null
+          emergency_phone: string | null
+          medical_notes: string | null
+          active: boolean | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
+          user_id: string
           name: string
           email?: string | null
           phone?: string | null
           birth_date?: string | null
           gender?: string | null
           weight?: number | null
-          user_id: string
+          address?: string | null
+          emergency_contact?: string | null
+          emergency_phone?: string | null
+          medical_notes?: string | null
+          active?: boolean | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
+          user_id?: string
           name?: string
           email?: string | null
           phone?: string | null
           birth_date?: string | null
           gender?: string | null
           weight?: number | null
-          user_id?: string
+          address?: string | null
+          emergency_contact?: string | null
+          emergency_phone?: string | null
+          medical_notes?: string | null
+          active?: boolean | null
           updated_at?: string
         }
       }
       performance_tests: {
         Row: {
           id: string
-          evaluatee_id: string
+          student_id: string
           user_id: string
           test_date: string
           test_type: string
@@ -126,7 +141,7 @@ export type Database = {
         }
         Insert: {
           id?: string
-          evaluatee_id: string
+          student_id: string
           user_id: string
           test_date: string
           test_type: string
@@ -167,7 +182,7 @@ export type Database = {
         }
         Update: {
           id?: string
-          evaluatee_id?: string
+          student_id?: string
           user_id?: string
           test_date?: string
           test_type?: string

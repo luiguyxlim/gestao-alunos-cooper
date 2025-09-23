@@ -61,7 +61,7 @@ export async function createPerformanceEvaluation(data: CreatePerformanceEvaluat
     // Preparar dados para inserção
     const performanceEvaluationData = {
       user_id: user.id,
-      evaluatee_id: data.evaluatee_id,
+      student_id: data.evaluatee_id,
       test_type: 'performance_evaluation',
       test_date: data.test_date,
       
