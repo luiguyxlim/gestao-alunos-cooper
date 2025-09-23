@@ -150,6 +150,17 @@ export async function createTest(formData: FormData) {
     throw new Error('Campos obrigatórios não preenchidos')
   }
 
+  // Log dos dados para debug
+  console.log('Creating test with data:', {
+    studentId,
+    testDate,
+    testType,
+    cooper_distance,
+    vo2_max,
+    cooper_age,
+    cooper_gender
+  })
+
   const { data, error } = await supabase
       .from('performance_tests')
       .insert({
@@ -175,7 +186,13 @@ export async function createTest(formData: FormData) {
 
   if (error) {
     console.error('Error creating test:', error)
-    throw new Error('Erro ao criar teste')
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint
+    })
+    throw new Error(`Erro ao criar teste: ${error.message}`)
   }
 
   revalidatePath('/tests')
