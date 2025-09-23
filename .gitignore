@@ -43,3 +43,10 @@ next-env.d.ts
 # e2e / playwright
 playwright-report/
 test-results/
+
+# IDEs/Editors
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
