@@ -1,14 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
+import { useState, useEffect, useMemo } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, Calculator, User, TestTube, CheckCircle, Target, Zap, Clock, MapPin } from 'lucide-react'
+import { Loader2, Calculator, User, Target, Zap, Clock, MapPin } from 'lucide-react'
 import { Student } from '@/lib/actions/students'
 import { getCooperTestsByStudent } from '@/lib/actions/performance-evaluation'
 import { calculatePerformanceEvaluation } from '@/lib/performance-evaluation'
@@ -26,14 +24,12 @@ interface TrainingPrescriptionFormProps {
 }
 
 export default function TrainingPrescriptionForm({ students, selectedStudentId }: TrainingPrescriptionFormProps) {
-  const router = useRouter()
   const [selectedStudent, setSelectedStudent] = useState<string>('')
   const [selectedCooperTest, setSelectedCooperTest] = useState<string>('')
   const [cooperTests, setCooperTests] = useState<CooperTest[]>([])
   const [intensityPercentage, setIntensityPercentage] = useState<string>('70')
   const [trainingTime, setTrainingTime] = useState<string>('40')
   const [isLoadingTests, setIsLoadingTests] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>('')
   const [calculations, setCalculations] = useState<{
     vo2Max: number
@@ -49,7 +45,7 @@ export default function TrainingPrescriptionForm({ students, selectedStudentId }
   } | null>(null)
 
   // Garantir que students seja sempre um array
-  const safeStudents = Array.isArray(students) ? students : []
+  const safeStudents = useMemo(() => Array.isArray(students) ? students : [], [students])
 
   // Definir estudante selecionado se fornecido via props
   useEffect(() => {
@@ -120,9 +116,6 @@ export default function TrainingPrescriptionForm({ students, selectedStudentId }
       setCalculations(null)
     }
   }, [selectedCooperTest, intensityPercentage, trainingTime, cooperTests, safeStudents, selectedStudent])
-
-  const selectedStudentData = safeStudents.find(s => s.id === selectedStudent)
-  const selectedCooperTestData = cooperTests?.find(test => test.id === selectedCooperTest)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">

@@ -45,7 +45,7 @@ export async function getTests(studentId?: string) {
       .eq('user_id', user.id)
       .order('test_date', { ascending: false })
     tests = fallback.data || []
-    error = fallback.error || null as any
+    error = fallback.error || null
   }
 
   if (error) {
@@ -92,7 +92,7 @@ export async function getTest(id: string) {
       .eq('user_id', user.id)
       .single()
     test = fallback.data
-    error = fallback.error as any
+    error = fallback.error
   }
 
   if (error) {

@@ -43,9 +43,12 @@ function PerformanceEvaluationForm({ students = [], selectedStudentId }: Perform
   const [error, setError] = useState<string>('')
   const [calculations, setCalculations] = useState<{
     vo2Max: number;
-    trainingDistance: number;
+    maxMET: number;
+    trainingFraction: number;
     trainingIntensity: number;
     trainingVelocity: number;
+    trainingDistance: number;
+    o2ConsumptionPerMinute: number;
     totalO2Consumption: number;
     caloricExpenditure: number;
     weightLoss: number;
