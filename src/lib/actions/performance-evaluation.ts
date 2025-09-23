@@ -22,7 +22,7 @@ export async function getCooperTestsByStudent(studentId: string) {
     .from('performance_tests')
     .select('*')
     .eq('user_id', user.id)
-    .eq('evaluatee_id', studentId)
+    .eq('student_id', studentId)
     .eq('test_type', 'cooper_vo2')
     .not('cooper_test_distance', 'is', null)
     .order('test_date', { ascending: false })

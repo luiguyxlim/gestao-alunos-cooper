@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 
 interface TestsPageProps {
   searchParams: Promise<{
-    evaluatee_id?: string
+  evaluatee_id?: string
   }>
 }
 

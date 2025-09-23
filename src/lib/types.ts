@@ -63,7 +63,7 @@ export type UpdateStudentData = CreateStudentData
 export interface Test {
   id: string
   user_id: string
-  evaluatee_id: string
+  student_id: string
   test_type: string
   test_date: string
   distance?: number
@@ -76,7 +76,7 @@ export interface Test {
 }
 
 export interface CreateTestData {
-  evaluatee_id: string
+  student_id: string
   test_type: string
   test_date: string
   distance?: number
@@ -94,7 +94,7 @@ export interface UpdateTestData extends CreateTestData {
 export interface PerformanceEvaluationTest {
   id: string
   user_id: string
-  evaluatee_id: string
+  student_id: string
   test_type: 'performance_evaluation'
   test_date: string
   
@@ -117,8 +117,8 @@ export interface PerformanceEvaluationTest {
   // Peso corporal do avaliando
   body_weight: number
   
-  // Dados do avaliando (join com tabela evaluatees)
-  evaluatees: {
+  // Dados do aluno (join com tabela students)
+  students: {
     id: string
     name: string
     email: string
@@ -133,7 +133,7 @@ export interface PerformanceEvaluationTest {
 }
 
 export interface CreatePerformanceEvaluationData {
-  evaluatee_id: string
+  evaluatee_id: string // mantido para compat com formulários existentes
   test_date: string
   vo2_max: number
   cooper_distance: number

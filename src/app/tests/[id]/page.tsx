@@ -136,7 +136,7 @@ export default function TestDetailPage() {
           .from('performance_tests')
           .select(`
             *,
-            evaluatees (
+            students (
               id,
               name
             )

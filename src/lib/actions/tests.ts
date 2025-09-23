@@ -19,7 +19,7 @@ export async function getTests(studentId?: string) {
     .from('performance_tests')
     .select(`
       *,
-      evaluatees (
+      students: evaluatees (
         id,
         name,
         birth_date,
@@ -32,7 +32,7 @@ export async function getTests(studentId?: string) {
     .order('test_date', { ascending: false })
 
   if (studentId) {
-    query = query.eq('evaluatee_id', studentId)
+    query = query.eq('student_id', studentId)
   }
 
   const { data: tests, error } = await query
@@ -60,7 +60,7 @@ export async function getTest(id: string) {
     .from('performance_tests')
     .select(`
       *,
-      evaluatees (
+      students: evaluatees (
         id,
         name,
         birth_date,
@@ -132,7 +132,7 @@ export async function createTest(formData: FormData) {
       .from('performance_tests')
       .insert({
         user_id: user.id,
-        evaluatee_id: studentId,
+        student_id: studentId,
         test_date: testDate,
         test_type: testType,
         notes,
@@ -208,7 +208,7 @@ export async function updateTest(formData: FormData) {
   const { error } = await supabase
     .from('performance_tests')
     .update({
-      evaluatee_id: studentId,
+      student_id: studentId,
       test_date: testDate,
       test_type: testType,
       notes,
@@ -300,7 +300,7 @@ export async function getTestsStats(studentId?: string) {
     .eq('user_id', user.id)
 
   if (studentId) {
-    query = query.eq('evaluatee_id', studentId)
+    query = query.eq('student_id', studentId)
   }
 
   const { data: tests, error } = await query

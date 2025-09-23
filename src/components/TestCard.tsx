@@ -24,10 +24,10 @@ interface TestCardProps {
     reaction_time?: number | null
     vo2_max?: number | null
     cooper_test_distance?: number | null
-    evaluatees: {
+    students?: {
       id: string
       name: string
-    }
+    } | null
   }
 }
 
@@ -157,7 +157,7 @@ function TestCard({ test }: TestCardProps) {
             </div>
             <div className="flex-1">
               <h3 className="text-xl leading-6 font-semibold text-gray-900 truncate">
-                {test.evaluatees?.name || 'Avaliando não encontrado'}
+                {test.students?.name || 'Aluno não encontrado'}
               </h3>
               <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium mt-1 ${
                 test.test_type === 'cooper_vo2' ? 'bg-teal-100 text-teal-700 border border-teal-200' :
@@ -298,7 +298,7 @@ function TestCard({ test }: TestCardProps) {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center pt-6 border-t border-gray-100 space-y-3 sm:space-y-0">
           <div className="flex flex-wrap gap-2">
             <Link
-              href={`/evaluatees/${test.evaluatees.id}`}
+              href={`/evaluatees/${test.students?.id}`}
               className="inline-flex items-center px-4 py-2 border border-gray-200 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 hover:scale-105"
             >
               <svg className="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -327,7 +327,7 @@ function TestCard({ test }: TestCardProps) {
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
         title="Excluir Teste"
-        message={`Tem certeza que deseja excluir o teste de ${test.evaluatees?.name || 'avaliando não encontrado'} realizado em ${formatDate(test.test_date)}? Esta ação não pode ser desfeita.`}
+        message={`Tem certeza que deseja excluir o teste de ${test.students?.name || 'aluno não encontrado'} realizado em ${formatDate(test.test_date)}? Esta ação não pode ser desfeita.`}
         confirmText="Excluir"
         cancelText="Cancelar"
         type="danger"
