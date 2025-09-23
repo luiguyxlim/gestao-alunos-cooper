@@ -48,12 +48,12 @@ export function calculateTrainingIntensity(maxMET: number, trainingFraction: num
 
 /**
  * Calcula a Velocidade do treino em metros por minuto
- * Fórmula: Vel m/m = IT / 60
- * @param trainingIntensity - Intensidade do Treinamento
+ * Fórmula: Vel m/min = (IT × 1000) / 60
+ * @param trainingIntensity - Intensidade do Treinamento (em km/h)
  * @returns Velocidade em metros por minuto
  */
 export function calculateTrainingVelocity(trainingIntensity: number): number {
-  return Math.round((trainingIntensity / 60) * 100) / 100;
+  return Math.round(((trainingIntensity * 1000) / 60) * 100) / 100;
 }
 
 /**
