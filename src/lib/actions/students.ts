@@ -50,7 +50,7 @@ export async function getStudents(): Promise<Student[]> {
   }
 
   const { data, error } = await supabase
-    .from('students')
+    .from('evaluatees')
     .select('*')
     .eq('user_id', user.id)
     .eq('active', true)
@@ -59,8 +59,8 @@ export async function getStudents(): Promise<Student[]> {
   if (error) {
     console.error('Erro ao buscar avaliandos:', error)
     // Se a tabela não existe, retorna array vazio
-    if (error.code === 'PGRST116' || error.code === 'PGRST205' || error.message?.includes('Could not find the table') || error.message?.includes('relation "public.students" does not exist')) {
-      console.warn('Tabela students não encontrada. Execute o script supabase-setup.sql no SQL Editor do Supabase.')
+    if (error.code === 'PGRST116' || error.code === 'PGRST205' || error.message?.includes('Could not find the table') || error.message?.includes('relation "public.evaluatees" does not exist')) {
+      console.warn('Tabela evaluatees não encontrada. Execute o script supabase-setup.sql no SQL Editor do Supabase.')
       return []
     }
     throw new Error('Erro ao buscar avaliandos')
@@ -80,7 +80,7 @@ export async function getStudent(id: string): Promise<Student | null> {
   }
 
   const { data, error } = await supabase
-    .from('students')
+    .from('evaluatees')
     .select('*')
     .eq('id', id)
     .eq('user_id', user.id)
@@ -123,7 +123,7 @@ export async function createStudent(formData: FormData) {
   }
 
   const { error } = await supabase
-    .from('students')
+    .from('evaluatees')
     .insert({
       ...studentData,
       user_id: user.id,
@@ -167,7 +167,7 @@ export async function updateStudent(id: string, formData: FormData) {
   }
 
   const { error } = await supabase
-    .from('students')
+    .from('evaluatees')
     .update(studentData)
     .eq('id', id)
     .eq('user_id', user.id)
@@ -193,7 +193,7 @@ export async function deactivateStudent(id: string) {
   }
 
   const { error } = await supabase
-    .from('students')
+    .from('evaluatees')
     .update({ active: false })
     .eq('id', id)
     .eq('user_id', user.id)
@@ -217,7 +217,7 @@ export async function reactivateStudent(id: string) {
   }
 
   const { error } = await supabase
-    .from('students')
+    .from('evaluatees')
     .update({ active: true })
     .eq('id', id)
     .eq('user_id', user.id)
@@ -241,7 +241,7 @@ export async function deleteStudent(id: string) {
   }
 
   const { error } = await supabase
-    .from('students')
+    .from('evaluatees')
     .delete()
     .eq('id', id)
     .eq('user_id', user.id)

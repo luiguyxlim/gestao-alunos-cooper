@@ -98,7 +98,7 @@ export async function createPerformanceEvaluation(data: CreatePerformanceEvaluat
     }
 
     revalidatePath('/tests')
-    revalidatePath(`/tests?student_id=${data.student_id}`)
+    revalidatePath(`/tests?student_id=${data.evaluatee_id}`)
     
     return result
   } catch (error) {
@@ -233,7 +233,7 @@ export async function updatePerformanceEvaluation(id: string, data: UpdatePerfor
 
     revalidatePath('/tests')
     revalidatePath(`/tests/${id}`)
-    revalidatePath(`/tests?student_id=${data.student_id}`)
+    revalidatePath(`/tests?student_id=${data.evaluatee_id}`)
     
     return result
   } catch (error) {

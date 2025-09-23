@@ -166,7 +166,7 @@ export async function getGlobalPerformanceStats(
       cooper_test_distance,
       body_fat_percentage,
       muscle_mass,
-      student_id,
+      evaluatee_id,
       created_at
     `)
     .eq('user_id', userId)
@@ -181,8 +181,8 @@ export async function getGlobalPerformanceStats(
       id: 'temp',
       user_id: userId,
       total_evaluations: 0,
-      total_evaluatees: 0,
-      total_active_evaluatees: 0,
+      total_students: 0,
+      total_active_students: 0,
       global_avg_vo2_max: null,
       global_avg_cooper_distance: null,
       global_avg_body_fat_percentage: null,
@@ -205,7 +205,7 @@ export async function getGlobalPerformanceStats(
   }
 
   // Calcular estatísticas
-  const uniqueEvaluatees = new Set(evaluations.map(e => e.student_id))
+  const uniqueEvaluatees = new Set(evaluations.map(e => e.evaluatee_id))
   const validVo2Max = evaluations.filter(e => e.vo2_max !== null).map(e => e.vo2_max!)
   const validCooperDistance = evaluations.filter(e => e.cooper_test_distance !== null).map(e => e.cooper_test_distance!)
   const validBodyFat = evaluations.filter(e => e.body_fat_percentage !== null).map(e => e.body_fat_percentage!)
@@ -255,7 +255,7 @@ export async function getAgeGroupPerformanceStats(
       cooper_test_distance,
       body_fat_percentage,
       muscle_mass,
-      student_id,
+      evaluatee_id,
       created_at,
       students!inner (
         id,
@@ -314,7 +314,7 @@ export async function getAgeGroupPerformanceStats(
       user_id: userId,
       age_group: ageGroup,
       total_evaluations: groupEvaluations.length,
-      total_students: new Set(groupEvaluations.map(e => e.student_id)).size,
+      total_students: new Set(groupEvaluations.map(e => e.evaluatee_id)).size,
       avg_vo2_max: validVo2Max.length > 0 ? validVo2Max.reduce((a, b) => a + b, 0) / validVo2Max.length : null,
       avg_cooper_distance: validCooperDistance.length > 0 ? validCooperDistance.reduce((a, b) => a + b, 0) / validCooperDistance.length : null,
       avg_body_fat_percentage: validBodyFat.length > 0 ? validBodyFat.reduce((a, b) => a + b, 0) / validBodyFat.length : null,
@@ -383,7 +383,7 @@ export async function getPerformanceData(
         })
         .map(s => s.id)
       
-      testsQuery = testsQuery.in('student_id', filteredStudentIds)
+      testsQuery = testsQuery.in('evaluatee_id', filteredStudentIds)
       studentsQuery = studentsQuery.in('id', filteredStudentIds)
     }
   }
