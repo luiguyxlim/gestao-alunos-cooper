@@ -453,6 +453,58 @@ function PerformanceEvaluationForm({ students = [], selectedStudentId }: Perform
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* VO2 Máximo */}
+                    <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-indigo-200 shadow-lg hover:shadow-xl transition-all duration-300">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-sm">
+                          💨
+                        </div>
+                        <span className="text-sm font-bold text-slate-700">VO2 Máximo</span>
+                      </div>
+                      <div className="text-2xl font-black text-indigo-600">
+                        {calculations.vo2Max.toFixed(2)} ml/kg/min
+                      </div>
+                    </div>
+
+                    {/* MET Máximo */}
+                    <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-cyan-200 shadow-lg hover:shadow-xl transition-all duration-300">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-teal-600 rounded-lg flex items-center justify-center text-white text-sm">
+                          📊
+                        </div>
+                        <span className="text-sm font-bold text-slate-700">MET Máximo</span>
+                      </div>
+                      <div className="text-2xl font-black text-cyan-600">
+                        {calculations.maxMET.toFixed(2)}
+                      </div>
+                    </div>
+
+                    {/* Fração do Treinamento */}
+                    <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-teal-200 shadow-lg hover:shadow-xl transition-all duration-300">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-green-600 rounded-lg flex items-center justify-center text-white text-sm">
+                          🎯
+                        </div>
+                        <span className="text-sm font-bold text-slate-700">Fração do Treinamento</span>
+                      </div>
+                      <div className="text-2xl font-black text-teal-600">
+                        {calculations.trainingFraction.toFixed(2)}
+                      </div>
+                    </div>
+
+                    {/* Consumo de O2 por minuto */}
+                    <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-yellow-200 shadow-lg hover:shadow-xl transition-all duration-300">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-lg flex items-center justify-center text-white text-sm">
+                          🫁
+                        </div>
+                        <span className="text-sm font-bold text-slate-700">Consumo O2/min</span>
+                      </div>
+                      <div className="text-2xl font-black text-yellow-600">
+                        {calculations.o2ConsumptionPerMinute.toFixed(2)} L/min
+                      </div>
+                    </div>
+
                     <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-emerald-200 shadow-lg hover:shadow-xl transition-all duration-300">
                       <div className="flex items-center gap-3 mb-3">
                         <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center text-white text-sm">
