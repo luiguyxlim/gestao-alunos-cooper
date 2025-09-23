@@ -22,7 +22,7 @@ function CooperCalculator({ students }: CooperCalculatorProps) {
 
   const calculateVO2 = () => {
     const distanceInput = document.getElementById('cooper_distance') as HTMLInputElement
-    const studentSelect = document.getElementById('evaluatee_id') as HTMLSelectElement
+    const studentSelect = document.getElementById('student_id') as HTMLSelectElement
     const vo2Input = document.getElementById('vo2_max') as HTMLInputElement
     
     if (!distanceInput || !studentSelect || !vo2Input) {

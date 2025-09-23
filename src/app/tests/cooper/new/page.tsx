@@ -17,7 +17,7 @@ declare global {
 
 interface NewCooperTestPageProps {
   searchParams: Promise<{
-    evaluatee_id?: string
+    student_id?: string
   }>
 }
 
@@ -59,7 +59,7 @@ export default function NewCooperTestPage({ searchParams }: NewCooperTestPagePro
         
         setUser(user)
         setStudents(studentsData || [])
-        setSelectedStudentId(resolvedSearchParams.evaluatee_id || '')
+        setSelectedStudentId(resolvedSearchParams.student_id || '')
       } catch (error) {
         console.error('Error loading data:', error)
       } finally {
@@ -78,7 +78,7 @@ export default function NewCooperTestPage({ searchParams }: NewCooperTestPagePro
       // Calculando VO2 máximo baseado no teste de Cooper
       
       const distanceInput = document.getElementById('cooper_distance') as HTMLInputElement
-      const studentSelect = document.getElementById('evaluatee_id') as HTMLSelectElement
+      const studentSelect = document.getElementById('student_id') as HTMLSelectElement
       const vo2Input = document.getElementById('vo2_max') as HTMLInputElement
       const cooperResults = document.getElementById('cooper-results')
       
@@ -218,7 +218,7 @@ export default function NewCooperTestPage({ searchParams }: NewCooperTestPagePro
           {/* Navegação */}
           <div className="flex items-center gap-4">
             <Link
-              href={selectedStudentId ? `/tests?evaluatee_id=${selectedStudentId}` : '/tests'}
+              href={selectedStudentId ? `/tests?student_id=${selectedStudentId}` : '/tests'}
               className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm text-slate-700 hover:text-indigo-600 rounded-xl border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -455,7 +455,7 @@ export default function NewCooperTestPage({ searchParams }: NewCooperTestPagePro
 
               <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-4 pt-8 border-t-2 border-slate-200">
                 <Link
-                  href={selectedStudentId ? `/tests?evaluatee_id=${selectedStudentId}` : '/tests'}
+                  href={selectedStudentId ? `/tests?student_id=${selectedStudentId}` : '/tests'}
                   className="w-full sm:w-auto inline-flex justify-center items-center gap-2 px-6 py-3 border-2 border-slate-300 rounded-xl shadow-lg bg-white/80 backdrop-blur-sm text-sm font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-all duration-300 transform hover:scale-105"
                 >
                   Cancelar
