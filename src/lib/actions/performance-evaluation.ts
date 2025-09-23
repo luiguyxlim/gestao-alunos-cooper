@@ -61,7 +61,7 @@ export async function createPerformanceEvaluation(data: CreatePerformanceEvaluat
     // Preparar dados para inserção
     const performanceEvaluationData = {
       user_id: user.id,
-      student_id: data.evaluatee_id,
+      student_id: data.student_id,
       test_type: 'performance_evaluation',
       test_date: data.test_date,
       
@@ -98,7 +98,7 @@ export async function createPerformanceEvaluation(data: CreatePerformanceEvaluat
     }
 
     revalidatePath('/tests')
-    revalidatePath(`/tests?student_id=${data.evaluatee_id}`)
+    revalidatePath(`/tests?student_id=${data.student_id}`)
     
     return result
   } catch (error) {
@@ -233,7 +233,7 @@ export async function updatePerformanceEvaluation(id: string, data: UpdatePerfor
 
     revalidatePath('/tests')
     revalidatePath(`/tests/${id}`)
-    revalidatePath(`/tests?student_id=${data.evaluatee_id}`)
+    revalidatePath(`/tests?student_id=${data.student_id}`)
     
     return result
   } catch (error) {

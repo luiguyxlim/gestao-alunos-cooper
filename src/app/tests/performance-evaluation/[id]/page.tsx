@@ -323,7 +323,7 @@ export default async function PerformanceEvaluationPage({ params }: PerformanceE
                   <p className="text-sm text-gray-500">Outros testes de performance</p>
                 </div>
                 <Link
-                  href={`/tests?evaluatee_id=${evaluation.students?.id}`}
+                  href={`/tests?student_id=${evaluation.students?.id}`}
                   className="text-indigo-600 hover:text-indigo-500 text-sm font-medium"
                 >
                   Ver todos os testes do avaliando →

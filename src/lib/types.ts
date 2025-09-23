@@ -133,7 +133,7 @@ export interface PerformanceEvaluationTest {
 }
 
 export interface CreatePerformanceEvaluationData {
-  evaluatee_id: string // mantido para compat com formulários existentes
+  student_id: string // mantido para compat com formulários existentes
   test_date: string
   vo2_max: number
   cooper_distance: number

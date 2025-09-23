@@ -113,7 +113,7 @@ export default async function NewTestPage({ searchParams }: NewTestPageProps) {
 
   // Se tipo é performance, redirecionar para a página específica
   if (testType === 'performance') {
-    redirect(`/tests/performance-evaluation/new${selectedStudentId ? `?evaluatee_id=${selectedStudentId}` : ''}`)
+    redirect(`/tests/performance-evaluation/new${selectedStudentId ? `?student_id=${selectedStudentId}` : ''}`)
   }
 
   // Tipo inválido, redirecionar para seleção

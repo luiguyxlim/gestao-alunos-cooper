@@ -64,8 +64,7 @@ export default function PerformanceComparison() {
           performance_tests!inner (
             test_date,
             cooper_test_distance,
-            vo2_max,
-            evaluation
+            vo2_max
           )
         `)
       
@@ -100,7 +99,7 @@ export default function PerformanceComparison() {
             latest_test_date: latestTest.test_date,
             cooper_test_distance: latestTest.cooper_test_distance,
             vo2_max: latestTest.vo2_max,
-            evaluation: latestTest.evaluation,
+            evaluation: 'N/A', // Campo não existe na tabela, usando valor padrão
             improvement_percentage: improvementPercentage
           });
         }
