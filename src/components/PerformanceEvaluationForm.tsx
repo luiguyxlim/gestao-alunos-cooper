@@ -99,15 +99,25 @@ function PerformanceEvaluationForm({ students = [], selectedStudentId }: Perform
       
       if (cooperTest && evaluatee && evaluatee.weight) {
         try {
+          console.log('Calculando com dados:', {
+            cooperDistance: cooperTest.cooper_test_distance,
+            intensityPercentage: parseFloat(intensityPercentage),
+            trainingTime: parseFloat(trainingTime),
+            bodyWeight: evaluatee.weight
+          })
+          
           const results = calculatePerformanceEvaluation({
             cooperDistance: cooperTest.cooper_test_distance,
             intensityPercentage: parseFloat(intensityPercentage),
             trainingTime: parseFloat(trainingTime),
             bodyWeight: evaluatee.weight
           })
+          
+          console.log('Resultados calculados:', results)
           setCalculations(results)
           setError('')
-        } catch {
+        } catch (error) {
+          console.error('Erro ao calcular:', error)
           setError('Erro ao calcular os resultados')
           setCalculations(null)
         }
