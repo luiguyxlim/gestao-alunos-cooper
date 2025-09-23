@@ -1,5 +1,5 @@
-const STATIC_CACHE = 'cooper-pro-static-v2'
-const DYNAMIC_CACHE = 'cooper-pro-dynamic-v2'
+const STATIC_CACHE = 'cooper-pro-static-v3'
+const DYNAMIC_CACHE = 'cooper-pro-dynamic-v3'
 
 const urlsToCache = [
   '/',
