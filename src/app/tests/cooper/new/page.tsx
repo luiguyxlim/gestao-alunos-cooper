@@ -44,7 +44,7 @@ export default function NewCooperTestPage({ searchParams }: NewCooperTestPagePro
 
         // Fetch students filtered by user_id
         const { data: studentsData, error } = await supabase
-          .from('evaluatees')
+          .from('students')
           .select('*')
           .eq('user_id', user.id)
           .eq('active', true)

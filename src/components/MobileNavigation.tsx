@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import LogoutButton from './LogoutButton'
@@ -16,15 +16,22 @@ interface MobileNavigationProps {
 
 export default function MobileNavigation({ user }: MobileNavigationProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard' },
     { name: 'Avaliandos', href: '/evaluatees' },
     { name: 'Testes', href: '/tests' },
+    { name: 'Performance', href: '/performance' },
   ]
 
   const isActive = (href: string) => {
+    if (!mounted) return false
     if (href === '/dashboard') {
       return pathname === '/dashboard'
     }

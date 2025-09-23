@@ -75,6 +75,10 @@ export async function getTest(id: string) {
 
   if (error) {
     console.error('Error fetching test:', error)
+    // Se a tabela não existe, retorna null
+    if (error.code === 'PGRST116' || error.code === 'PGRST205' || error.message?.includes('Could not find the table') || error.message?.includes('relation "public.performance_tests" does not exist')) {
+      console.warn('Tabela performance_tests não encontrada. Aguarde alguns minutos para o cache do PostgREST ser atualizado.')
+    }
     return null
   }
 

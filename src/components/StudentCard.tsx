@@ -49,11 +49,13 @@ function StudentCard({ student }: StudentCardProps) {
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'Não informado'
+    if (typeof window === 'undefined') return 'Carregando...'
     return new Date(dateString).toLocaleDateString('pt-BR')
   }
 
   const calculateAge = (birthDate: string) => {
     if (!birthDate) return null
+    if (typeof window === 'undefined') return null
     const today = new Date()
     const birth = new Date(birthDate)
     let age = today.getFullYear() - birth.getFullYear()

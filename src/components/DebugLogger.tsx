@@ -17,8 +17,11 @@ export default function DebugLogger() {
   const [isVisible, setIsVisible] = useState(false);
   const [filter, setFilter] = useState<string>('all');
   const [autoScroll, setAutoScroll] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+    
     const interval = setInterval(() => {
       const allLogs = logger.getLogs();
       setLogs(allLogs);
@@ -26,6 +29,11 @@ export default function DebugLogger() {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Evitar hidratação mismatch
+  if (!isMounted) {
+    return null;
+  }
 
   const filteredLogs = logs.filter(log => {
     if (filter === 'all') return true;

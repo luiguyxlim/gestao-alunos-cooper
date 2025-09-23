@@ -11,7 +11,7 @@ interface Test {
   id: string
   test_date: string
   test_type: string
-  distance?: number
+  cooper_test_distance?: number
   duration?: number
   age?: number
   gender?: string
@@ -71,6 +71,14 @@ function calculateVO2Max(distance: number, age: number, gender: string): number 
   }
   
   return Math.max(vo2, 0)
+}
+
+function calculateTrainingDistance(vo2Max: number, intensityPercentage: number = 70): number {
+  // Fórmula inversa do Cooper para calcular distância baseada no VO2
+  const targetVO2 = vo2Max * (intensityPercentage / 100);
+  const trainingDistance = (targetVO2 * 44.73) + 504.9;
+  
+  return Math.round(trainingDistance);
 }
 
 function getVO2Classification(vo2: number, age: number, gender: string): { level: string; color: string; description: string } {
@@ -272,8 +280,8 @@ export default function TestDetailPage() {
   }
 
   // Calcular VO2 máximo para teste de Cooper
-  const vo2Max = (test.test_type === 'cooper' || test.test_type === 'cooper_vo2') && test.distance && test.age && test.gender 
-    ? calculateVO2Max(test.distance, test.age, test.gender)
+  const vo2Max = (test.test_type === 'cooper' || test.test_type === 'cooper_vo2') && test.cooper_test_distance && test.age && test.gender
+    ? calculateVO2Max(test.cooper_test_distance, test.age, test.gender)
     : null
 
   const vo2Classification = vo2Max && test.age && test.gender 
@@ -348,119 +356,156 @@ export default function TestDetailPage() {
               {(test.test_type === 'cooper' || test.test_type === 'cooper_vo2') ? (
                 <div className="space-y-8">
                   {/* Resultados do Teste Cooper - Seção Destacada */}
-                  {(test.distance || test.vo2_max || vo2Max) && (
-                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-8 shadow-xl">
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white text-xl">
-                          🏃‍♂️
-                        </div>
-                        <div>
-                          <h2 className="text-2xl font-bold text-slate-900">
-                            Resultados do Teste Cooper
-                          </h2>
-                          <p className="text-sm text-slate-600">
-                            Teste de 12 minutos - Capacidade cardiorrespiratória
-                          </p>
+                  {(test.cooper_test_distance || test.vo2_max || vo2Max) && (
+                    <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+                      {/* Header */}
+                      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-white text-2xl">
+                            🏃‍♂️
+                          </div>
+                          <div>
+                            <h2 className="text-3xl font-bold text-white">
+                              Resultados do Teste Cooper
+                            </h2>
+                            <p className="text-blue-100 font-medium">
+                              Teste de 12 minutos - Capacidade cardiorrespiratória
+                            </p>
+                          </div>
                         </div>
                       </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Distância Percorrida */}
-                        {test.distance && (
-                          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-blue-100">
-                            <div className="flex items-center gap-3 mb-4">
-                              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center text-white">
-                                📏
+
+                      {/* Content */}
+                      <div className="p-8">
+                        {/* Métricas Principais */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                          {/* Distância Percorrida */}
+                          {test.cooper_test_distance && (
+                            <div className="bg-gradient-to-br from-pink-50 to-rose-50 border-2 border-pink-200 rounded-2xl p-6">
+                              <div className="flex items-center gap-3 mb-6">
+                                <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl flex items-center justify-center text-white">
+                                  📏
+                                </div>
+                                <div>
+                                  <h3 className="text-xl font-bold text-pink-900">Distância Percorrida</h3>
+                                  <p className="text-sm text-pink-700">Teste de 12 minutos</p>
+                                </div>
                               </div>
-                              <div>
-                                <h3 className="text-lg font-bold text-slate-900">Distância Percorrida</h3>
-                                <p className="text-xs text-slate-600">em 12 minutos</p>
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-4xl font-black text-green-700 mb-2">
-                                {test.distance}
-                                <span className="text-lg font-semibold text-green-600 ml-1">m</span>
-                              </div>
-                              <div className="text-sm text-slate-600">
-                                Distância total percorrida
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* VO2 Máximo */}
-                        {(test.vo2_max || vo2Max) && (
-                          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-blue-100">
-                            <div className="flex items-center gap-3 mb-4">
-                              <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl flex items-center justify-center text-white">
-                                🫁
-                              </div>
-                              <div>
-                                <h3 className="text-lg font-bold text-slate-900">VO2 Máximo</h3>
-                                <p className="text-xs text-slate-600">Capacidade cardiorrespiratória</p>
+                              <div className="text-center bg-white rounded-xl p-6 shadow-sm">
+                                <div className="text-6xl font-black text-pink-700 mb-2">
+                                  {test.cooper_test_distance}
+                                  <span className="text-2xl font-bold text-pink-600 ml-2">m</span>
+                                </div>
+                                <div className="text-xl font-semibold text-pink-800 mb-2">
+                                  {(test.cooper_test_distance / 1000).toFixed(2)} km
+                                </div>
+                                <div className="text-sm text-pink-600">
+                                  Distância total percorrida
+                                </div>
                               </div>
                             </div>
-                            <div className="text-center">
-                              <div className="text-4xl font-black text-teal-700 mb-2">
-                                {test.vo2_max || vo2Max?.toFixed(1)}
-                                <span className="text-lg font-semibold text-teal-600 ml-1">ml/kg/min</span>
-                              </div>
-                              <div className="text-sm text-slate-600 mb-3">
-                                Consumo máximo de oxigênio
+                          )}
+                          
+                          {/* VO2 Máximo e Distância de Treino */}
+                          {(test.vo2_max || vo2Max) && (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                              {/* VO2 Máximo */}
+                              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-2xl p-6">
+                                <div className="flex items-center gap-3 mb-6">
+                                  <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center text-white">
+                                    🫁
+                                  </div>
+                                  <div>
+                                    <h3 className="text-xl font-bold text-emerald-900">VO2 Máximo</h3>
+                                    <p className="text-sm text-emerald-700">Capacidade cardiorrespiratória</p>
+                                  </div>
+                                </div>
+                                <div className="text-center bg-white rounded-xl p-6 shadow-sm">
+                                  <div className="text-5xl font-black text-emerald-700 mb-2">
+                                    {test.vo2_max || vo2Max?.toFixed(1)}
+                                    <span className="text-xl font-semibold text-emerald-600 ml-2">ml/kg/min</span>
+                                  </div>
+                                  <div className="text-sm text-emerald-600 mb-4">
+                                    Consumo máximo de oxigênio
+                                  </div>
+                                  
+                                  {/* Classificação do VO2 */}
+                                  {vo2Classification && (
+                                    <div className={`inline-flex items-center px-6 py-3 rounded-full text-sm font-bold shadow-sm ${
+                                      vo2Classification.color === 'emerald' ? 'bg-green-100 text-green-800 border-2 border-green-300' :
+                                      vo2Classification.color === 'blue' ? 'bg-blue-100 text-blue-800 border-2 border-blue-300' :
+                                      vo2Classification.color === 'yellow' ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-300' :
+                                      'bg-red-100 text-red-800 border-2 border-red-300'
+                                    }`}>
+                                      <div className={`w-3 h-3 rounded-full mr-3 ${
+                                        vo2Classification.color === 'emerald' ? 'bg-green-500' :
+                                        vo2Classification.color === 'blue' ? 'bg-blue-500' :
+                                        vo2Classification.color === 'yellow' ? 'bg-yellow-500' :
+                                        'bg-red-500'
+                                      }`}></div>
+                                      {vo2Classification.level}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                               
-                              {/* Classificação do VO2 */}
-                              {vo2Classification && (
-                                <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${
-                                  vo2Classification.color === 'emerald' ? 'bg-green-100 text-green-800 border border-green-200' :
-                                  vo2Classification.color === 'blue' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-                                  vo2Classification.color === 'yellow' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
-                                  'bg-red-100 text-red-800 border border-red-200'
-                                }`}>
-                                  <div className={`w-2 h-2 rounded-full mr-2 ${
-                                    vo2Classification.color === 'emerald' ? 'bg-green-500' :
-                                    vo2Classification.color === 'blue' ? 'bg-blue-500' :
-                                    vo2Classification.color === 'yellow' ? 'bg-yellow-500' :
-                                    'bg-red-500'
-                                  }`}></div>
-                                  {vo2Classification.level}
+                              {/* Distância de Treino Recomendada */}
+                              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6">
+                                <div className="flex items-center gap-3 mb-6">
+                                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white">
+                                    🏃‍♂️
+                                  </div>
+                                  <div>
+                                    <h3 className="text-xl font-bold text-blue-900">Distância de Treino</h3>
+                                    <p className="text-sm text-blue-700">Recomendação para 70% VO2</p>
+                                  </div>
                                 </div>
-                              )}
+                                <div className="text-center bg-white rounded-xl p-6 shadow-sm">
+                                  <div className="text-4xl font-black text-blue-700 mb-2">
+                                    {calculateTrainingDistance(test.vo2_max || vo2Max || 0, 70)}
+                                    <span className="text-xl font-semibold text-blue-600 ml-2">m</span>
+                                  </div>
+                                  <div className="text-xl font-semibold text-blue-800 mb-2">
+                                    {(calculateTrainingDistance(test.vo2_max || vo2Max || 0, 70) / 1000).toFixed(2)} km
+                                  </div>
+                                  <div className="text-sm text-blue-600 mb-4">
+                                    Distância recomendada para treino aeróbico
+                                  </div>
+                                  
+                                  {/* Intensidade */}
+                                  <div className="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-blue-100 text-blue-800 border-2 border-blue-300">
+                                    <div className="w-3 h-3 rounded-full mr-2 bg-blue-500"></div>
+                                    70% Intensidade
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Resumo Estatístico */}
+                        {(test.vo2_max || vo2Max) && (
+                          <div className="bg-gradient-to-r from-slate-50 to-gray-50 border border-slate-200 rounded-2xl p-6">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-gradient-to-br from-slate-600 to-gray-700 rounded-xl flex items-center justify-center text-white">
+                                  📊
+                                </div>
+                                <div>
+                                  <h4 className="text-lg font-bold text-slate-900">Resumo da Avaliação</h4>
+                                  <p className="text-sm text-slate-600">Análise geral do desempenho</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-3xl font-black text-slate-700 mb-1">
+                                  {(test.vo2_max || vo2Max)?.toFixed(1)}
+                                </div>
+                                <div className="text-sm font-medium text-slate-500">Pontuação Final</div>
+                              </div>
                             </div>
                           </div>
                         )}
                       </div>
-                      
-                      {/* Média Geral para Teste Cooper */}
-                      {(test.vo2_max || vo2Max) && (
-                        <div className="mt-6 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-6">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <div className="flex-shrink-0">
-                                <svg className="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                </svg>
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium text-indigo-700">Média Geral</p>
-                                <p className={`text-2xl font-bold ${
-                                  (test.vo2_max || vo2Max || 0) >= 50 ? 'text-green-600' :
-                                  (test.vo2_max || vo2Max || 0) >= 40 ? 'text-blue-600' :
-                                  (test.vo2_max || vo2Max || 0) >= 30 ? 'text-yellow-600' :
-                                  'text-red-600'
-                                }`}>
-                                  {(test.vo2_max || vo2Max)?.toFixed(1)}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm font-medium text-indigo-700">Métricas</p>
-                              <p className="text-xl font-bold text-indigo-900">1/10</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )}
 

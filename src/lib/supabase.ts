@@ -206,6 +206,216 @@ export type Database = {
           updated_at?: string
         }
       }
+      performance_age_groups: {
+        Row: {
+          id: string
+          user_id: string
+          age_group: string
+          total_evaluations: number
+          total_students: number
+          avg_vo2_max: number | null
+          avg_cooper_distance: number | null
+          avg_body_fat_percentage: number | null
+          avg_muscle_mass: number | null
+          avg_resting_heart_rate: number | null
+          total_cooper_distance: number
+          total_vo2_max: number
+          vo2_max_p25: number | null
+          vo2_max_p50: number | null
+          vo2_max_p75: number | null
+          vo2_max_p90: number | null
+          cooper_distance_p25: number | null
+          cooper_distance_p50: number | null
+          cooper_distance_p75: number | null
+          cooper_distance_p90: number | null
+          last_updated: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          age_group: string
+          total_evaluations?: number
+          total_students?: number
+          avg_vo2_max?: number | null
+          avg_cooper_distance?: number | null
+          avg_body_fat_percentage?: number | null
+          avg_muscle_mass?: number | null
+          avg_resting_heart_rate?: number | null
+          total_cooper_distance?: number
+          total_vo2_max?: number
+          vo2_max_p25?: number | null
+          vo2_max_p50?: number | null
+          vo2_max_p75?: number | null
+          vo2_max_p90?: number | null
+          cooper_distance_p25?: number | null
+          cooper_distance_p50?: number | null
+          cooper_distance_p75?: number | null
+          cooper_distance_p90?: number | null
+          last_updated?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          age_group?: string
+          total_evaluations?: number
+          total_students?: number
+          avg_vo2_max?: number | null
+          avg_cooper_distance?: number | null
+          avg_body_fat_percentage?: number | null
+          avg_muscle_mass?: number | null
+          avg_resting_heart_rate?: number | null
+          total_cooper_distance?: number
+          total_vo2_max?: number
+          vo2_max_p25?: number | null
+          vo2_max_p50?: number | null
+          vo2_max_p75?: number | null
+          vo2_max_p90?: number | null
+          cooper_distance_p25?: number | null
+          cooper_distance_p50?: number | null
+          cooper_distance_p75?: number | null
+          cooper_distance_p90?: number | null
+          last_updated?: string
+          updated_at?: string
+        }
+      }
+      performance_global_stats: {
+        Row: {
+          id: string
+          user_id: string
+          total_evaluations: number
+          total_students: number
+          total_active_students: number
+          global_avg_vo2_max: number | null
+          global_avg_cooper_distance: number | null
+          global_avg_body_fat_percentage: number | null
+          global_avg_muscle_mass: number | null
+          global_avg_age: number | null
+          male_count: number
+          female_count: number
+          other_gender_count: number
+          best_vo2_max: number | null
+          best_cooper_distance: number | null
+          best_vo2_max_student_id: string | null
+          best_cooper_distance_student_id: string | null
+          recent_evaluations_count: number
+          recent_avg_vo2_max: number | null
+          recent_avg_cooper_distance: number | null
+          last_calculation: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          total_evaluations?: number
+          total_students?: number
+          total_active_students?: number
+          global_avg_vo2_max?: number | null
+          global_avg_cooper_distance?: number | null
+          global_avg_body_fat_percentage?: number | null
+          global_avg_muscle_mass?: number | null
+          global_avg_age?: number | null
+          male_count?: number
+          female_count?: number
+          other_gender_count?: number
+          best_vo2_max?: number | null
+          best_cooper_distance?: number | null
+          best_vo2_max_student_id?: string | null
+          best_cooper_distance_student_id?: string | null
+          recent_evaluations_count?: number
+          recent_avg_vo2_max?: number | null
+          recent_avg_cooper_distance?: number | null
+          last_calculation?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          total_evaluations?: number
+          total_students?: number
+          total_active_students?: number
+          global_avg_vo2_max?: number | null
+          global_avg_cooper_distance?: number | null
+          global_avg_body_fat_percentage?: number | null
+          global_avg_muscle_mass?: number | null
+          global_avg_age?: number | null
+          male_count?: number
+          female_count?: number
+          other_gender_count?: number
+          best_vo2_max?: number | null
+          best_cooper_distance?: number | null
+          best_vo2_max_student_id?: string | null
+          best_cooper_distance_student_id?: string | null
+          recent_evaluations_count?: number
+          recent_avg_vo2_max?: number | null
+          recent_avg_cooper_distance?: number | null
+          last_calculation?: string
+          updated_at?: string
+        }
+      }
     }
   }
+}
+
+// Tipos auxiliares para a área de Performance
+export type AgeGroup = '18-25' | '26-35' | '36-45' | '46-55' | '56-65' | '65+'
+
+export type PerformanceAgeGroupStats = Database['public']['Tables']['performance_age_groups']['Row']
+export type PerformanceGlobalStats = Database['public']['Tables']['performance_global_stats']['Row']
+
+// Tipos para componentes de interface
+export interface PerformanceMetrics {
+  vo2Max: number | null
+  cooperDistance: number | null
+  bodyFatPercentage: number | null
+  muscleMass: number | null
+  restingHeartRate: number | null
+}
+
+export interface AgeGroupData {
+  ageGroup: AgeGroup
+  stats: PerformanceAgeGroupStats
+  percentileRank?: number
+}
+
+export interface PerformanceComparison {
+  current: PerformanceMetrics
+  ageGroupAverage: PerformanceMetrics
+  globalAverage: PerformanceMetrics
+  percentileRank: {
+    vo2Max: number | null
+    cooperDistance: number | null
+  }
+}
+
+export interface PerformanceTrend {
+  date: string
+  vo2Max: number | null
+  cooperDistance: number | null
+  bodyFatPercentage: number | null
+  muscleMass: number | null
+}
+
+export interface PerformanceFilter {
+  dateRange: {
+    start: Date | null
+    end: Date | null
+  }
+  testTypes: string[]
+  ageGroups: AgeGroup[]
+  gender: ('masculino' | 'feminino' | 'outro')[] | null
+}
+
+export interface PerformanceInsight {
+  type: 'improvement' | 'decline' | 'stable' | 'achievement'
+  metric: string
+  value: number
+  change: number
+  description: string
+  recommendation?: string
 }

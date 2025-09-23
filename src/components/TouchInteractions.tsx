@@ -137,8 +137,10 @@ export default function TouchInteractions({
 // Hook for detecting device type
 export function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false)
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
+    setIsClient(true)
     const checkDevice = () => {
       setIsMobile(window.innerWidth < 768 || 'ontouchstart' in window)
     }
@@ -149,13 +151,13 @@ export function useIsMobile() {
     return () => window.removeEventListener('resize', checkDevice)
   }, [])
 
-  return isMobile
+  return isClient ? isMobile : false
 }
 
 // Hook for haptic feedback (if supported)
 export function useHapticFeedback() {
   const triggerHaptic = (type: 'light' | 'medium' | 'heavy' = 'light') => {
-    if ('vibrate' in navigator) {
+    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
       const patterns = {
         light: [10],
         medium: [20],

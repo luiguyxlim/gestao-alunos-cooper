@@ -29,6 +29,11 @@ export async function getCooperTestsByStudent(studentId: string) {
 
   if (error) {
     console.error('Erro ao buscar testes de Cooper:', error)
+    // Se a tabela não existe, retorna array vazio
+    if (error.code === 'PGRST116' || error.code === 'PGRST205' || error.message?.includes('Could not find the table') || error.message?.includes('relation "public.performance_tests" does not exist')) {
+      console.warn('Tabela performance_tests não encontrada. Aguarde alguns minutos para o cache do PostgREST ser atualizado.')
+      return []
+    }
     throw new Error('Erro ao buscar testes de Cooper')
   }
 
@@ -93,7 +98,7 @@ export async function createPerformanceEvaluation(data: CreatePerformanceEvaluat
     }
 
     revalidatePath('/tests')
-    revalidatePath(`/tests?evaluatee_id=${data.evaluatee_id}`)
+    revalidatePath(`/tests?student_id=${data.student_id}`)
     
     return result
   } catch (error) {
@@ -112,22 +117,27 @@ export async function getPerformanceEvaluations() {
   if (!user) throw new Error('Usuário não autenticado')
 
   const { data, error } = await supabase
-    .from('performance_tests')
-    .select(`
-      *,
-      evaluatees!performance_tests_evaluatee_id_fkey (
-        id,
-        name,
-        email,
-        weight
-      )
-    `)
+      .from('performance_tests')
+      .select(`
+        *,
+        students!performance_tests_student_id_fkey (
+          id,
+          name,
+          email,
+          weight
+        )
+      `)
     .eq('user_id', user.id)
     .eq('test_type', 'performance_evaluation')
     .order('test_date', { ascending: false })
 
   if (error) {
     console.error('Erro ao buscar avaliações de desempenho:', error)
+    // Se a tabela não existe, retorna array vazio
+    if (error.code === 'PGRST116' || error.code === 'PGRST205' || error.message?.includes('Could not find the table') || error.message?.includes('relation "public.performance_tests" does not exist')) {
+      console.warn('Tabela performance_tests não encontrada. Aguarde alguns minutos para o cache do PostgREST ser atualizado.')
+      return []
+    }
     throw new Error('Erro ao buscar avaliações de desempenho')
   }
 
@@ -144,18 +154,18 @@ export async function getPerformanceEvaluation(id: string): Promise<PerformanceE
   if (!user) throw new Error('Usuário não autenticado')
 
   const { data, error } = await supabase
-    .from('performance_tests')
-    .select(`
-      *,
-      evaluatees!performance_tests_evaluatee_id_fkey (
-        id,
-        name,
-        email,
-        weight,
-        gender,
-        birth_date
-      )
-    `)
+      .from('performance_tests')
+      .select(`
+        *,
+        students!performance_tests_student_id_fkey (
+          id,
+          name,
+          email,
+          weight,
+          gender,
+          birth_date
+        )
+      `)
     .eq('id', id)
     .eq('user_id', user.id)
     .eq('test_type', 'performance_evaluation')
@@ -163,6 +173,10 @@ export async function getPerformanceEvaluation(id: string): Promise<PerformanceE
 
   if (error) {
     console.error('Erro ao buscar avaliação de desempenho:', error)
+    // Se a tabela não existe, retorna null
+    if (error.code === 'PGRST116' || error.code === 'PGRST205' || error.message?.includes('Could not find the table') || error.message?.includes('relation "public.performance_tests" does not exist')) {
+      console.warn('Tabela performance_tests não encontrada. Aguarde alguns minutos para o cache do PostgREST ser atualizado.')
+    }
     return null
   }
 
@@ -219,7 +233,7 @@ export async function updatePerformanceEvaluation(id: string, data: UpdatePerfor
 
     revalidatePath('/tests')
     revalidatePath(`/tests/${id}`)
-    revalidatePath(`/tests?evaluatee_id=${data.evaluatee_id}`)
+    revalidatePath(`/tests?student_id=${data.student_id}`)
     
     return result
   } catch (error) {
