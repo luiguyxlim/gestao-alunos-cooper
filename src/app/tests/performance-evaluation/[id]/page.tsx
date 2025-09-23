@@ -60,7 +60,7 @@ export default async function PerformanceEvaluationPage({ params }: PerformanceE
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h1 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight">
-                  Avaliação de Desempenho - {evaluation.evaluatees.name}
+                  Avaliação de Desempenho - {evaluation.students?.name || 'Aluno'}
                 </h1>
                 <p className="text-base font-semibold text-gray-700 mt-2">
                   {formatDate(evaluation.test_date)}
@@ -68,7 +68,7 @@ export default async function PerformanceEvaluationPage({ params }: PerformanceE
               </div>
               <div className="flex space-x-3">
                 <Link
-                  href={`/evaluatees/${evaluation.evaluatees.id}`}
+                  href={`/evaluatees/${evaluation.students?.id}`}
                   className="bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                 >
                   Ver Avaliando
@@ -323,7 +323,7 @@ export default async function PerformanceEvaluationPage({ params }: PerformanceE
                   <p className="text-sm text-gray-500">Outros testes de performance</p>
                 </div>
                 <Link
-                  href={`/tests?evaluatee_id=${evaluation.evaluatees.id}`}
+                  href={`/tests?evaluatee_id=${evaluation.students?.id}`}
                   className="text-indigo-600 hover:text-indigo-500 text-sm font-medium"
                 >
                   Ver todos os testes do avaliando →

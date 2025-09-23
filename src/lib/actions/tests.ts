@@ -19,7 +19,7 @@ export async function getTests(studentId?: string) {
     .from('performance_tests')
     .select(`
       *,
-      students: evaluatees (
+      students:students!performance_tests_student_id_fkey (
         id,
         name,
         birth_date,
@@ -35,7 +35,18 @@ export async function getTests(studentId?: string) {
     query = query.eq('student_id', studentId)
   }
 
-  const { data: tests, error } = await query
+  let { data: tests, error } = await query
+
+  // Fallback: se o embed falhar por relacionamento/tabela, buscar sem join
+  if (error && (error.code === 'PGRST200' || error.message?.includes('Could not find a relationship'))) {
+    const fallback = await supabase
+      .from('performance_tests')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('test_date', { ascending: false })
+    tests = fallback.data || []
+    error = fallback.error || null as any
+  }
 
   if (error) {
     console.error('Error fetching tests:', error)
@@ -56,11 +67,11 @@ export async function getTest(id: string) {
     redirect('/login')
   }
 
-  const { data: test, error } = await supabase
+  let { data: test, error } = await supabase
     .from('performance_tests')
     .select(`
       *,
-      students: evaluatees (
+      students:students!performance_tests_student_id_fkey (
         id,
         name,
         birth_date,
@@ -72,6 +83,17 @@ export async function getTest(id: string) {
     .eq('id', id)
     .eq('user_id', user.id)
     .single()
+
+  if (error && (error.code === 'PGRST200' || error.message?.includes('Could not find a relationship'))) {
+    const fallback = await supabase
+      .from('performance_tests')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .single()
+    test = fallback.data
+    error = fallback.error as any
+  }
 
   if (error) {
     console.error('Error fetching test:', error)
