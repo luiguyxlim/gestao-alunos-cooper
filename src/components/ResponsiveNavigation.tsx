@@ -28,6 +28,7 @@ function ResponsiveNavigation({ user }: ResponsiveNavigationProps) {
     { name: 'Dashboard', href: '/dashboard' },
     { name: 'Avaliandos', href: '/evaluatees' },
     { name: 'Testes', href: '/tests' },
+    { name: 'Prescrição', href: '/tests/training-prescription' },
     { name: 'Performance', href: '/performance' },
   ]
 
