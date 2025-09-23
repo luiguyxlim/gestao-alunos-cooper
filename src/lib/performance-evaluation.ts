@@ -1,110 +1,125 @@
 // Funções de cálculo para Avaliação de Desempenho
-// Baseado nas fórmulas fornecidas nos documentos
-
-/**
- * Calcula a distância de treino baseada no VO2 máximo e percentual de intensidade
- * Fórmula baseada na fórmula inversa do Cooper: Distância = (VO2max * 44.73) + 504.9
- * @param vo2Max - VO2 máximo do avaliando
- * @param intensityPercentage - Percentual de intensidade (0-100)
- * @returns Distância de treino em metros
- */
-export function calculateTrainingDistance(
-  vo2Max: number,
-  intensityPercentage: number
-): number {
-  // Fórmula inversa do Cooper para calcular distância baseada no VO2
-  const targetVO2 = vo2Max * (intensityPercentage / 100);
-  const trainingDistance = (targetVO2 * 44.73) + 504.9;
-  
-  return Math.round(trainingDistance);
-}
+// Baseado nas fórmulas do arquivo "Calculos Vo2"
 
 /**
  * Calcula o VO2 máximo baseado na distância percorrida no teste de Cooper
- * Fórmula: VO2max = (Distância Percorrida - 504.9) / 44.73
- * @param cooperDistance - Distância percorrida no teste de Cooper em metros
- * @returns VO2 máximo calculado
+ * Nova fórmula: VO2max = (Distância - 504,1) / 44,8
+ * @param cooperDistance - Distância percorrida em metros no teste de Cooper
+ * @returns VO2 máximo em ml/kg/min
  */
 export function calculateVO2Max(cooperDistance: number): number {
-  const vo2Max = (cooperDistance - 504.9) / 44.73;
-  return Math.round(vo2Max * 100) / 100; // Arredondar para 2 casas decimais
+  const vo2Max = (cooperDistance - 504.1) / 44.8;
+  return Math.max(0, Math.round(vo2Max * 100) / 100);
 }
 
 /**
- * Calcula a intensidade do treinamento baseada no VO2 máximo
- * @param vo2Max - VO2 máximo
- * @param intensityPercentage - Percentual de intensidade desejado
- * @returns Intensidade de treinamento
+ * Calcula o MET máximo baseado no VO2 máximo
+ * Fórmula: MET Máx = VO2max / 3,5
+ * @param vo2Max - VO2 máximo em ml/kg/min
+ * @returns MET máximo
  */
-export function calculateTrainingIntensity(
+export function calculateMaxMET(vo2Max: number): number {
+  return Math.round((vo2Max / 3.5) * 100) / 100;
+}
+
+/**
+ * Calcula a Fração do Treinamento (FT)
+ * Fórmula: FT = MET Máx + (% / 100)
+ * @param maxMET - MET máximo
+ * @param intensityPercentage - Percentual de intensidade (50-90%)
+ * @returns Fração do Treinamento
+ */
+export function calculateTrainingFraction(maxMET: number, intensityPercentage: number): number {
+  return Math.round((maxMET + (intensityPercentage / 100)) * 100) / 100;
+}
+
+/**
+ * Calcula a Intensidade do Treinamento (IT)
+ * Fórmula: IT = MET Máx x FT
+ * @param maxMET - MET máximo
+ * @param trainingFraction - Fração do Treinamento
+ * @returns Intensidade do Treinamento
+ */
+export function calculateTrainingIntensity(maxMET: number, trainingFraction: number): number {
+  return Math.round((maxMET * trainingFraction) * 100) / 100;
+}
+
+/**
+ * Calcula a Velocidade do treino em metros por minuto
+ * Fórmula: Vel m/m = IT / 60
+ * @param trainingIntensity - Intensidade do Treinamento
+ * @returns Velocidade em metros por minuto
+ */
+export function calculateTrainingVelocity(trainingIntensity: number): number {
+  return Math.round((trainingIntensity / 60) * 100) / 100;
+}
+
+/**
+ * Calcula a Distância do Treino (DT)
+ * Fórmula: DT = Vel m/m x T
+ * @param trainingVelocity - Velocidade em metros por minuto
+ * @param trainingTime - Tempo de treino em minutos
+ * @returns Distância do treino em metros
+ */
+export function calculateTrainingDistance(trainingVelocity: number, trainingTime: number): number {
+  return Math.round(trainingVelocity * trainingTime);
+}
+
+/**
+ * Calcula o Consumo de Oxigênio no treino (LO2/min)
+ * Fórmula: Cons. O2T (LO2/min) = (VO2máx x % / 100) x PC / 1000
+ * @param vo2Max - VO2 máximo em ml/kg/min
+ * @param intensityPercentage - Percentual de intensidade (50-90%)
+ * @param bodyWeight - Peso corporal em kg
+ * @returns Consumo de O2 em litros por minuto
+ */
+export function calculateO2ConsumptionPerMinute(
   vo2Max: number,
-  intensityPercentage: number
+  intensityPercentage: number,
+  bodyWeight: number
 ): number {
-  return (vo2Max * intensityPercentage) / 100;
+  const consumption = (vo2Max * (intensityPercentage / 100) * bodyWeight) / 1000;
+  return Math.round(consumption * 100) / 100;
 }
 
 /**
- * Calcula a velocidade do treino baseada na distância e tempo
- * @param distance - Distância em metros
- * @param timeMinutes - Tempo em minutos
- * @returns Velocidade em m/min
- */
-export function calculateTrainingVelocity(
-  distance: number,
-  timeMinutes: number
-): number {
-  return distance / timeMinutes;
-}
-
-/**
- * Calcula o consumo de O2 total do treino
- * Fórmula: Cons. O2 x Duração do treino
- * @param vo2 - Consumo de O2 em L/min
- * @param durationMinutes - Duração do treino em minutos
+ * Calcula o Consumo Total de O2 no treino
+ * Fórmula: Cons. O2 Total = Cons. O2 x Duração do treino
+ * @param o2ConsumptionPerMinute - Consumo de O2 por minuto em litros
+ * @param trainingTime - Duração do treino em minutos
  * @returns Consumo total de O2 em litros
  */
 export function calculateTotalO2Consumption(
-  vo2: number,
-  durationMinutes: number
+  o2ConsumptionPerMinute: number,
+  trainingTime: number
 ): number {
-  return vo2 * durationMinutes;
+  return Math.round((o2ConsumptionPerMinute * trainingTime) * 100) / 100;
 }
 
 /**
- * Calcula o gasto calórico baseado no consumo de O2 e peso corporal
- * Fórmula: Gasto Calórico = Cons.O2 total x 5 = 78.4 x 5 = 392 Cal.
+ * Calcula o Gasto Calórico
+ * Fórmula: Gasto Cal. = Cons. O2 total x 5
  * @param totalO2Consumption - Consumo total de O2 em litros
- * @param bodyWeight - Peso corporal em kg
  * @returns Gasto calórico em calorias
  */
-export function calculateCaloricExpenditure(
-  totalO2Consumption: number,
-  bodyWeight: number
-): number {
-  // Fórmula base: 1 litro de O2 = aproximadamente 5 kcal
-  const baseCalories = totalO2Consumption * 5;
-  
-  // Ajustar pelo peso corporal (fator de correção)
-  const weightFactor = bodyWeight / 70; // 70kg como peso de referência
-  
-  return Math.round(baseCalories * weightFactor);
+export function calculateCaloricExpenditure(totalO2Consumption: number): number {
+  return Math.round((totalO2Consumption * 5) * 100) / 100;
 }
 
 /**
- * Calcula o peso perdido baseado no gasto calórico
- * Fórmula: Peso Perdido = Gasto Calórico x 1000 / 7730
+ * Calcula o Peso Perdido em gramas
+ * Fórmula: Peso Perdido (gr) = Gasto Calórico x 1000 / 7730
  * @param caloricExpenditure - Gasto calórico em calorias
  * @returns Peso perdido em gramas
  */
 export function calculateWeightLoss(caloricExpenditure: number): number {
-  const weightLossGrams = (caloricExpenditure * 1000) / 7730;
-  return Math.round(weightLossGrams * 100) / 100; // Arredondar para 2 casas decimais
+  return Math.round((caloricExpenditure * 1000 / 7730) * 100) / 100;
 }
 
 /**
- * Calcula todos os valores da avaliação de desempenho
- * @param cooperDistance - Distância do teste de Cooper em metros
- * @param intensityPercentage - Percentual de intensidade (0-100)
+ * Função principal que calcula todos os valores da avaliação de desempenho
+ * @param cooperDistance - Distância percorrida no teste de Cooper em metros
+ * @param intensityPercentage - Percentual de intensidade (50-90%)
  * @param trainingTime - Tempo de treino em minutos
  * @param bodyWeight - Peso corporal em kg
  * @returns Objeto com todos os cálculos
@@ -120,32 +135,44 @@ export function calculatePerformanceEvaluation({
   trainingTime: number;
   bodyWeight: number;
 }) {
-  // 1. Calcular VO2 máximo
+  // 1. VO2 máximo
   const vo2Max = calculateVO2Max(cooperDistance);
   
-  // 2. Calcular distância de treino
-  const trainingDistance = calculateTrainingDistance(vo2Max, intensityPercentage);
+  // 2. MET máximo
+  const maxMET = calculateMaxMET(vo2Max);
   
-  // 3. Calcular intensidade de treinamento
-  const trainingIntensity = calculateTrainingIntensity(vo2Max, intensityPercentage);
+  // 3. Fração do Treinamento (FT)
+  const trainingFraction = calculateTrainingFraction(maxMET, intensityPercentage);
   
-  // 4. Calcular velocidade do treino
-  const trainingVelocity = calculateTrainingVelocity(trainingDistance, trainingTime);
+  // 4. Intensidade do Treinamento (IT)
+  const trainingIntensity = calculateTrainingIntensity(maxMET, trainingFraction);
   
-  // 5. Calcular consumo total de O2
-  const totalO2Consumption = calculateTotalO2Consumption(trainingIntensity, trainingTime);
+  // 5. Velocidade do treino (m/min)
+  const trainingVelocity = calculateTrainingVelocity(trainingIntensity);
   
-  // 6. Calcular gasto calórico
-  const caloricExpenditure = calculateCaloricExpenditure(totalO2Consumption, bodyWeight);
+  // 6. Distância do Treino (DT)
+  const trainingDistance = calculateTrainingDistance(trainingVelocity, trainingTime);
   
-  // 7. Calcular peso perdido
+  // 7. Consumo de O2 por minuto
+  const o2ConsumptionPerMinute = calculateO2ConsumptionPerMinute(vo2Max, intensityPercentage, bodyWeight);
+  
+  // 8. Consumo Total de O2
+  const totalO2Consumption = calculateTotalO2Consumption(o2ConsumptionPerMinute, trainingTime);
+  
+  // 9. Gasto Calórico
+  const caloricExpenditure = calculateCaloricExpenditure(totalO2Consumption);
+  
+  // 10. Peso Perdido
   const weightLoss = calculateWeightLoss(caloricExpenditure);
-  
+
   return {
     vo2Max,
-    trainingDistance,
+    maxMET,
+    trainingFraction,
     trainingIntensity,
     trainingVelocity,
+    trainingDistance,
+    o2ConsumptionPerMinute,
     totalO2Consumption,
     caloricExpenditure,
     weightLoss

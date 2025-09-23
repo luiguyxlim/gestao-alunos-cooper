@@ -67,8 +67,8 @@ function CooperCalculator({ students }: CooperCalculatorProps) {
 
     const gender = selectedStudent.gender
 
-    // Fórmula do Cooper: VO2max = (distância em metros - 504.9) / 44.73
-    const vo2Max = Math.max(0, Math.round(((distance - 504.9) / 44.73) * 100) / 100)
+    // Nova fórmula do Cooper: VO2max = (distância em metros - 504,1) / 44,8
+    const vo2Max = Math.max(0, Math.round(((distance - 504.1) / 44.8) * 100) / 100)
 
     // Classificação baseada na idade e gênero
     const classifications = {

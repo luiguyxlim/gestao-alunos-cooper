@@ -142,8 +142,8 @@ export async function createTest(formData: FormData) {
   
   // Se for teste de Cooper, calcular VO2 máximo automaticamente
   if (testType === 'cooper_vo2' && cooper_distance && cooper_age && cooper_gender) {
-    // Fórmula do Cooper: VO2max = (distância em metros - 504.9) / 44.73
-    vo2_max = Math.max(0, Math.round(((cooper_distance - 504.9) / 44.73) * 100) / 100)
+    // Nova fórmula do Cooper: VO2max = (distância em metros - 504,1) / 44,8
+    vo2_max = Math.max(0, Math.round(((cooper_distance - 504.1) / 44.8) * 100) / 100)
   }
 
   if (!studentId || !testDate || !testType) {
@@ -236,8 +236,8 @@ export async function updateTest(formData: FormData) {
   
   // Se for teste de Cooper, calcular VO2 máximo automaticamente
   if (testType === 'cooper_vo2' && cooper_distance && cooper_age && cooper_gender) {
-    // Fórmula do Cooper: VO2max = (distância em metros - 504.9) / 44.73
-    vo2_max = Math.max(0, Math.round(((cooper_distance - 504.9) / 44.73) * 100) / 100)
+    // Nova fórmula do Cooper: VO2max = (distância em metros - 504,1) / 44,8
+    vo2_max = Math.max(0, Math.round(((cooper_distance - 504.1) / 44.8) * 100) / 100)
   }
 
   if (!id || !studentId || !testDate || !testType) {
