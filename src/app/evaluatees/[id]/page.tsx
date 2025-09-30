@@ -1,6 +1,6 @@
 import { getStudent } from '@/lib/actions/students'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { redirect, notFound } from 'next/navigation'
+import { getAuthenticatedUser } from '@/lib/supabase-server'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import LogoutButton from '@/components/LogoutButton'
 
@@ -11,15 +11,7 @@ interface EvaluateePageProps {
 }
 
 export default async function EvaluateePage({ params }: EvaluateePageProps) {
-  const supabase = await createServerSupabaseClient()
-  
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
+  const { user } = await getAuthenticatedUser()
 
   const { id } = await params
   const student = await getStudent(id)

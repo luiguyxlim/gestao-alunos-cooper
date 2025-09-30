@@ -2,32 +2,13 @@
 
 import Link from 'next/link'
 import { deleteTest } from '@/lib/actions/tests'
+import { PerformanceTestDetail } from '@/lib/types'
 import { useState, memo } from 'react'
 import TouchInteractions, { useHapticFeedback } from './TouchInteractions'
 import ConfirmModal from './ConfirmModal'
 
 interface TestListItemProps {
-  test: {
-    id: string
-    test_date: string
-    test_type: string
-    notes?: string | null
-    speed?: number | null
-    agility?: number | null
-    strength?: number | null
-    endurance?: number | null
-    flexibility?: number | null
-    coordination?: number | null
-    balance?: number | null
-    power?: number | null
-    reaction_time?: number | null
-    vo2_max?: number | null
-    cooper_test_distance?: number | null
-    students?: {
-      id: string
-      name: string
-    } | null
-  }
+  test: PerformanceTestDetail
 }
 
 function TestListItem({ test }: TestListItemProps) {

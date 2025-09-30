@@ -1,6 +1,6 @@
 'use server'
 
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { getAuthenticatedUser } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -41,13 +41,7 @@ export interface UpdateStudentData extends CreateStudentData {
 
 // Buscar todos os avaliandos do usuário
 export async function getStudents(): Promise<Student[]> {
-  const supabase = await createServerSupabaseClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    redirect('/login')
-  }
+  const { supabase, user } = await getAuthenticatedUser()
 
   const { data, error } = await supabase
     .from('students')
@@ -71,13 +65,7 @@ export async function getStudents(): Promise<Student[]> {
 
 // Buscar um avaliando específico
 export async function getStudent(id: string): Promise<Student | null> {
-  const supabase = await createServerSupabaseClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    redirect('/login')
-  }
+  const { supabase, user } = await getAuthenticatedUser()
 
   const { data, error } = await supabase
     .from('students')
@@ -96,13 +84,7 @@ export async function getStudent(id: string): Promise<Student | null> {
 
 // Criar novo avaliando
 export async function createStudent(formData: FormData) {
-  const supabase = await createServerSupabaseClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    redirect('/login')
-  }
+  const { supabase, user } = await getAuthenticatedUser()
 
   const studentData: CreateStudentData = {
     name: formData.get('name') as string,
@@ -140,13 +122,7 @@ export async function createStudent(formData: FormData) {
 
 // Atualizar avaliando
 export async function updateStudent(id: string, formData: FormData) {
-  const supabase = await createServerSupabaseClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    redirect('/login')
-  }
+  const { supabase, user } = await getAuthenticatedUser()
 
   const studentData: UpdateStudentData = {
     name: formData.get('name') as string,
@@ -184,13 +160,7 @@ export async function updateStudent(id: string, formData: FormData) {
 
 // Desativar avaliando (soft delete)
 export async function deactivateStudent(id: string) {
-  const supabase = await createServerSupabaseClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    redirect('/login')
-  }
+  const { supabase, user } = await getAuthenticatedUser()
 
   const { error } = await supabase
     .from('students')
@@ -208,13 +178,7 @@ export async function deactivateStudent(id: string) {
 
 // Reativar avaliando
 export async function reactivateStudent(id: string) {
-  const supabase = await createServerSupabaseClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    redirect('/login')
-  }
+  const { supabase, user } = await getAuthenticatedUser()
 
   const { error } = await supabase
     .from('students')
@@ -232,13 +196,7 @@ export async function reactivateStudent(id: string) {
 
 // Deletar avaliando permanentemente
 export async function deleteStudent(id: string) {
-  const supabase = await createServerSupabaseClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    redirect('/login')
-  }
+  const { supabase, user } = await getAuthenticatedUser()
 
   const { error } = await supabase
     .from('evaluatees')

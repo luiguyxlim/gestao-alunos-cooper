@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { getAuthenticatedUser } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import ResponsiveNavigation from '@/components/ResponsiveNavigation'
@@ -11,15 +11,7 @@ interface NewTestPageProps {
 }
 
 export default async function NewTestPage({ searchParams }: NewTestPageProps) {
-  const supabase = await createServerSupabaseClient()
-  
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
+  const { user } = await getAuthenticatedUser()
 
   const resolvedSearchParams = await searchParams
   const selectedStudentId = resolvedSearchParams.student_id

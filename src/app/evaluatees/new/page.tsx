@@ -1,19 +1,10 @@
 import ResponsiveNavigation from '@/components/ResponsiveNavigation'
 import { createStudent } from '@/lib/actions/students'
 import Link from 'next/link'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { redirect } from 'next/navigation'
+import { getAuthenticatedUser } from '@/lib/supabase-server'
 
 export default async function NewEvaluateePage() {
-  const supabase = await createServerSupabaseClient()
-  
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
+  const { user } = await getAuthenticatedUser()
 
   return (
     <div className="min-h-screen bg-gray-50">

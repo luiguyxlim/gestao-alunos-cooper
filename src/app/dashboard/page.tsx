@@ -1,7 +1,6 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { getAuthenticatedUser } from '@/lib/supabase-server'
 import { getStudents } from '@/lib/actions/students'
 import { getTestsStats } from '@/lib/actions/tests'
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import ResponsiveNavigation from '@/components/ResponsiveNavigation'
 import type { Metadata } from 'next'
@@ -19,15 +18,7 @@ export const metadata: Metadata = {
 }
 
 export default async function DashboardPage() {
-  const supabase = await createServerSupabaseClient()
-  
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
+  const { user } = await getAuthenticatedUser()
 
   const [students, testsStats] = await Promise.all([
     getStudents(),

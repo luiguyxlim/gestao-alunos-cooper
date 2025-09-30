@@ -1,7 +1,7 @@
 import { getTest, updateTest } from '@/lib/actions/tests'
 import { getStudents } from '@/lib/actions/students'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { redirect, notFound } from 'next/navigation'
+import { getAuthenticatedUser } from '@/lib/supabase-server'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import LogoutButton from '@/components/LogoutButton'
 
@@ -12,15 +12,7 @@ interface EditTestPageProps {
 }
 
 export default async function EditTestPage({ params }: EditTestPageProps) {
-  const supabase = await createServerSupabaseClient()
-  
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
+  const { user } = await getAuthenticatedUser()
 
   const { id } = await params
   const test = await getTest(id)
@@ -107,7 +99,7 @@ export default async function EditTestPage({ params }: EditTestPageProps) {
               <div className="mb-6">
                 <h1 className="text-3xl font-bold text-gray-900">Editar Teste</h1>
                 <p className="text-sm text-gray-500 mt-1">
-                  Atualize as informações do teste de {test.evaluatees.name} - {getTestTypeLabel(test.test_type)}
+                  Atualize as informações do teste de {test.students?.name || 'Avaliando não encontrado'} - {getTestTypeLabel(test.test_type)}
                 </p>
               </div>
 
@@ -191,7 +183,7 @@ export default async function EditTestPage({ params }: EditTestPageProps) {
                           min="500"
                           max="5000"
                           step="1"
-                          defaultValue={test.cooper_distance || ''}
+                          defaultValue={test.cooper_test_distance || ''}
                           className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                           placeholder="Ex: 2400"
                         />

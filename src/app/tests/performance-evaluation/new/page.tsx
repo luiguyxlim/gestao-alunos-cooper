@@ -1,7 +1,6 @@
 import ResponsiveNavigation from '@/components/ResponsiveNavigation'
 import { getStudents } from '@/lib/actions/students'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { redirect } from 'next/navigation'
+import { getAuthenticatedUser } from '@/lib/supabase-server'
 import Link from 'next/link'
 import PerformanceEvaluationForm from '@/components/PerformanceEvaluationForm'
 
@@ -12,15 +11,7 @@ interface NewPerformanceEvaluationPageProps {
 }
 
 export default async function NewPerformanceEvaluationPage({ searchParams }: NewPerformanceEvaluationPageProps) {
-  const supabase = await createServerSupabaseClient()
-  
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
+  const { user } = await getAuthenticatedUser()
 
   const resolvedSearchParams = await searchParams
   const students = await getStudents()

@@ -1,11 +1,11 @@
 import { getTests } from '@/lib/actions/tests'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { redirect } from 'next/navigation'
+import { getAuthenticatedUser } from '@/lib/supabase-server'
 import Link from 'next/link'
 import ResponsiveNavigation from '@/components/ResponsiveNavigation'
 import TestListItem from '@/components/TestListItem'
 import TestsStats from '@/components/TestsStats'
 import type { Metadata } from 'next'
+import type { PerformanceTestDetail } from '@/lib/types'
 
 export const metadata: Metadata = {
   title: 'Testes de Performance - Cooper Pro',
@@ -22,23 +22,17 @@ export const metadata: Metadata = {
 
 interface TestsPageProps {
   searchParams: Promise<{
-  evaluatee_id?: string
+    evaluatee_id?: string
   }>
 }
 
+type TestsPageSearchParams = Awaited<TestsPageProps['searchParams']>
+
 export default async function TestsPage({ searchParams }: TestsPageProps) {
-  const supabase = await createServerSupabaseClient()
-  
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { user } = await getAuthenticatedUser()
 
-  if (!user) {
-    redirect('/login')
-  }
-
-  const resolvedSearchParams = await searchParams
-  const tests = await getTests(resolvedSearchParams.evaluatee_id)
+  const resolvedSearchParams: TestsPageSearchParams = await searchParams
+  const tests = (await getTests(resolvedSearchParams.evaluatee_id)) as PerformanceTestDetail[]
 
   return (
     <div className="min-h-screen bg-gray-50">

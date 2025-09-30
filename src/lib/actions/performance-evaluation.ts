@@ -1,6 +1,6 @@
 'use server'
 
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { getAuthenticatedUser } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { 
   CreatePerformanceEvaluationData, 
@@ -13,10 +13,7 @@ import { calculatePerformanceEvaluation } from '@/lib/performance-evaluation'
  * Busca testes de Cooper de um avaliando para herdar dados de VO2
  */
 export async function getCooperTestsByStudent(studentId: string) {
-  const supabase = await createServerSupabaseClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Usuário não autenticado')
+  const { supabase, user } = await getAuthenticatedUser()
 
   const { data, error } = await supabase
     .from('performance_tests')
@@ -44,10 +41,7 @@ export async function getCooperTestsByStudent(studentId: string) {
  * Cria uma nova avaliação de desempenho
  */
 export async function createPerformanceEvaluation(data: CreatePerformanceEvaluationData) {
-  const supabase = await createServerSupabaseClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Usuário não autenticado')
+  const { supabase, user } = await getAuthenticatedUser()
 
   try {
     // Calcular todos os valores automaticamente
@@ -111,10 +105,7 @@ export async function createPerformanceEvaluation(data: CreatePerformanceEvaluat
  * Busca todas as avaliações de desempenho do usuário
  */
 export async function getPerformanceEvaluations() {
-  const supabase = await createServerSupabaseClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Usuário não autenticado')
+  const { supabase, user } = await getAuthenticatedUser()
 
   const { data, error } = await supabase
       .from('performance_tests')
@@ -148,10 +139,7 @@ export async function getPerformanceEvaluations() {
  * Busca uma avaliação de desempenho específica
  */
 export async function getPerformanceEvaluation(id: string): Promise<PerformanceEvaluationTest | null> {
-  const supabase = await createServerSupabaseClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Usuário não autenticado')
+  const { supabase, user } = await getAuthenticatedUser()
 
   const { data, error } = await supabase
       .from('performance_tests')
@@ -187,10 +175,7 @@ export async function getPerformanceEvaluation(id: string): Promise<PerformanceE
  * Atualiza uma avaliação de desempenho
  */
 export async function updatePerformanceEvaluation(id: string, data: UpdatePerformanceEvaluationData) {
-  const supabase = await createServerSupabaseClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Usuário não autenticado')
+  const { supabase, user } = await getAuthenticatedUser()
 
   try {
     // Recalcular todos os valores
@@ -246,10 +231,7 @@ export async function updatePerformanceEvaluation(id: string, data: UpdatePerfor
  * Deleta uma avaliação de desempenho
  */
 export async function deletePerformanceEvaluation(id: string) {
-  const supabase = await createServerSupabaseClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Usuário não autenticado')
+  const { supabase, user } = await getAuthenticatedUser()
 
   const { error } = await supabase
     .from('performance_tests')

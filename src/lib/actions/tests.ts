@@ -1,19 +1,12 @@
 'use server'
 
-import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { redirect } from 'next/navigation'
+import { getAuthenticatedUser } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
+import type { PerformanceTestDetail } from '@/lib/types'
 
-export async function getTests(studentId?: string) {
-  const supabase = await createServerSupabaseClient()
-  
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
+export async function getTests(studentId?: string): Promise<PerformanceTestDetail[]> {
+  const { supabase, user } = await getAuthenticatedUser()
 
   let query = supabase
     .from('performance_tests')
@@ -53,19 +46,11 @@ export async function getTests(studentId?: string) {
     return []
   }
 
-  return tests || []
+  return (tests as PerformanceTestDetail[]) || []
 }
 
-export async function getTest(id: string) {
-  const supabase = await createServerSupabaseClient()
-  
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
+export async function getTest(id: string): Promise<PerformanceTestDetail | null> {
+  const { supabase, user } = await getAuthenticatedUser()
 
   let { data: test, error } = await supabase
     .from('performance_tests')
@@ -104,19 +89,11 @@ export async function getTest(id: string) {
     return null
   }
 
-  return test
+  return (test as PerformanceTestDetail) || null
 }
 
 export async function createTest(formData: FormData) {
-  const supabase = await createServerSupabaseClient()
-  
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
+  const { supabase, user } = await getAuthenticatedUser()
 
   const studentId = formData.get('student_id') as string
   const testDate = formData.get('test_date') as string
@@ -201,15 +178,7 @@ export async function createTest(formData: FormData) {
 }
 
 export async function updateTest(formData: FormData) {
-  const supabase = await createServerSupabaseClient()
-  
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
+  const { supabase, user } = await getAuthenticatedUser()
 
   const id = formData.get('id') as string
   const studentId = formData.get('student_id') as string
@@ -278,15 +247,7 @@ export async function updateTest(formData: FormData) {
 }
 
 export async function deleteTest(formData: FormData | { id: string }) {
-  const supabase = await createServerSupabaseClient()
-  
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
+  const { supabase, user } = await getAuthenticatedUser()
 
   // Suportar tanto FormData quanto objeto simples
   let id: string
@@ -323,15 +284,7 @@ export async function getTestsByStudent(studentId: string) {
 }
 
 export async function getTestsStats(studentId?: string) {
-  const supabase = await createServerSupabaseClient()
-  
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
+  const { supabase, user } = await getAuthenticatedUser()
 
   let query = supabase
     .from('performance_tests')
@@ -359,21 +312,24 @@ export async function getTestsStats(studentId?: string) {
   }
 
   const now = new Date()
-  const thisMonth = tests?.filter(test => {
+  const normalizedTests: PerformanceTestDetail[] = (tests as PerformanceTestDetail[]) || []
+
+  const thisMonth = normalizedTests.filter(test => {
     const testDate = new Date(test.test_date)
     return testDate.getMonth() === now.getMonth() && testDate.getFullYear() === now.getFullYear()
   }).length || 0
 
-  const lastTest = tests?.sort((a, b) => new Date(b.test_date).getTime() - new Date(a.test_date).getTime())[0] || null
+  const lastTest = normalizedTests.sort((a, b) => new Date(b.test_date).getTime() - new Date(a.test_date).getTime())[0] || null
 
   // Calcular média das métricas disponíveis
-  const metrics = ['speed', 'agility', 'strength', 'endurance', 'flexibility', 'coordination', 'balance', 'power']
   let totalScore = 0
   let scoreCount = 0
 
-  tests?.forEach(test => {
-    metrics.forEach(metric => {
-      const value = test[metric as keyof typeof test] as number
+  const metricsList: (keyof PerformanceTestDetail)[] = ['speed', 'agility', 'strength', 'endurance', 'flexibility', 'coordination', 'balance', 'power']
+
+  normalizedTests.forEach(test => {
+    metricsList.forEach(metric => {
+      const value = test[metric] as number
       if (value !== null && value !== undefined) {
         totalScore += value
         scoreCount++
@@ -392,15 +348,7 @@ export async function getTestsStats(studentId?: string) {
 }
 
 export async function createPerformanceTest(formData: FormData) {
-  const supabase = await createServerSupabaseClient()
-  
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
+  const { supabase, user } = await getAuthenticatedUser()
 
   const studentId = formData.get('student_id') as string
   const testDate = formData.get('test_date') as string

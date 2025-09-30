@@ -1,6 +1,6 @@
 import { getPerformanceEvaluation } from '@/lib/actions/performance-evaluation'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { redirect, notFound } from 'next/navigation'
+import { getAuthenticatedUser } from '@/lib/supabase-server'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import ResponsiveNavigation from '@/components/ResponsiveNavigation'
 
@@ -11,15 +11,7 @@ interface PerformanceEvaluationPageProps {
 }
 
 export default async function PerformanceEvaluationPage({ params }: PerformanceEvaluationPageProps) {
-  const supabase = await createServerSupabaseClient()
-  
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
+  const { user } = await getAuthenticatedUser()
 
   const { id } = await params
   const evaluation = await getPerformanceEvaluation(id)

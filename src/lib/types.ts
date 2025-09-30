@@ -90,6 +90,38 @@ export interface UpdateTestData extends CreateTestData {
   id: string // ID do teste para atualização
 }
 
+export interface PerformanceTestDetail {
+  id: string
+  test_date: string
+  test_type: string
+  cooper_test_distance?: number | null
+  vo2_max?: number | null
+  notes?: string | null
+  student_id: string
+  intensity_percentage?: number | null
+  training_time?: number | null
+  training_intensity?: number | null
+  training_velocity?: number | null
+  training_distance?: number | null
+  total_o2_consumption?: number | null
+  caloric_expenditure?: number | null
+  weight_loss?: number | null
+  body_weight?: number | null
+  speed?: number | null
+  agility?: number | null
+  strength?: number | null
+  endurance?: number | null
+  flexibility?: number | null
+  coordination?: number | null
+  balance?: number | null
+  power?: number | null
+  reaction_time?: number | null
+  students?: {
+    id: string
+    name: string
+  } | null
+}
+
 // Novo tipo de teste: Avaliação de Desempenho
 export interface PerformanceEvaluationTest {
   id: string

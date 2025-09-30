@@ -1,6 +1,5 @@
 import { getStudents } from '@/lib/actions/students'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { redirect } from 'next/navigation'
+import { getAuthenticatedUser } from '@/lib/supabase-server'
 import Link from 'next/link'
 import ResponsiveNavigation from '@/components/ResponsiveNavigation'
 import StudentListItem from '@/components/StudentListItem'
@@ -19,15 +18,7 @@ export const metadata: Metadata = {
 }
 
 export default async function EvaluateesPage() {
-  const supabase = await createServerSupabaseClient()
-  
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
+  const { user } = await getAuthenticatedUser()
 
   const students = await getStudents()
 
