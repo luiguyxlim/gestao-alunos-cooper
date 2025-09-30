@@ -245,83 +245,96 @@ export async function getAgeGroupPerformanceStats(
   userId: string
 ): Promise<PerformanceAgeGroupStats[]> {
   const supabase = createClient()
-  
-  // Buscar dados de avaliações com informações dos avaliados
-  const { data: evaluations, error } = await supabase
+
+  const { data: tests, error: testsError } = await supabase
     .from('performance_tests')
-    .select(`
-      id,
-      vo2_max,
-      cooper_test_distance,
-      body_fat_percentage,
-      muscle_mass,
-      student_id,
-      created_at,
-      students!inner (
-        id,
-        birth_date
-      )
-    `)
+    .select('id, student_id, vo2_max, cooper_test_distance, body_fat_percentage, muscle_mass, created_at')
     .eq('user_id', userId)
 
-  if (error) {
-    console.error('Erro ao buscar avaliações com dados dos avaliados:', error)
+  if (testsError) {
+    console.error('Erro ao buscar avaliações para estatísticas por faixa etária:', testsError)
     return []
   }
 
-  if (!evaluations || evaluations.length === 0) {
+  if (!tests || tests.length === 0) {
     return []
   }
 
-  // Agrupar por faixa etária
-  const ageGroups: { [key: string]: typeof evaluations } = {}
-  
-  evaluations.forEach(evaluation => {
-    if (evaluation.students && Array.isArray(evaluation.students) && evaluation.students.length > 0) {
-      const student = evaluation.students[0] // Pega o primeiro student
-      if (student && student.birth_date) {
-        const birthDate = new Date(student.birth_date)
-        const age = new Date().getFullYear() - birthDate.getFullYear()
-        
-        let ageGroup: string
-        if (age < 18) ageGroup = '< 18'
-        else if (age < 25) ageGroup = '18-24'
-        else if (age < 35) ageGroup = '25-34'
-        else if (age < 45) ageGroup = '35-44'
-        else if (age < 55) ageGroup = '45-54'
-        else if (age < 65) ageGroup = '55-64'
-        else ageGroup = '65+'
-        
-        if (!ageGroups[ageGroup]) {
-          ageGroups[ageGroup] = []
-        }
-        ageGroups[ageGroup].push(evaluation)
-      }
+  const studentIds = Array.from(new Set(tests.map(test => test.student_id).filter((id): id is string => Boolean(id))))
+
+  const studentsMap = new Map<string, { birth_date: string | null }>()
+
+  if (studentIds.length > 0) {
+    const { data: studentsData, error: studentsError } = await supabase
+      .from('students')
+      .select('id, birth_date')
+      .eq('user_id', userId)
+      .in('id', studentIds)
+
+    if (studentsError) {
+      console.error('Erro ao buscar dados dos alunos para estatísticas por faixa etária:', studentsError)
+    } else {
+      (studentsData ?? []).forEach(student => {
+        studentsMap.set(student.id, { birth_date: student.birth_date })
+      })
     }
+  }
+
+  const ageGroups: Record<string, typeof tests> = {}
+
+  tests.forEach(test => {
+    if (!test.student_id) return
+
+    const studentInfo = studentsMap.get(test.student_id)
+    if (!studentInfo?.birth_date) return
+
+    const birthDate = new Date(studentInfo.birth_date)
+    if (Number.isNaN(birthDate.getTime())) return
+
+    const today = new Date()
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const monthDiff = today.getMonth() - birthDate.getMonth()
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--
+    }
+
+    let ageGroup: string
+    if (age < 18) ageGroup = '< 18'
+    else if (age < 25) ageGroup = '18-24'
+    else if (age < 35) ageGroup = '25-34'
+    else if (age < 45) ageGroup = '35-44'
+    else if (age < 55) ageGroup = '45-54'
+    else if (age < 65) ageGroup = '55-64'
+    else ageGroup = '65+'
+
+    if (!ageGroups[ageGroup]) {
+      ageGroups[ageGroup] = []
+    }
+
+    ageGroups[ageGroup].push(test)
   })
 
-  // Calcular estatísticas para cada faixa etária
   const result: PerformanceAgeGroupStats[] = []
-  
-  Object.entries(ageGroups).forEach(([ageGroup, groupEvaluations]) => {
-    const validVo2Max = groupEvaluations.filter(e => e.vo2_max !== null).map(e => e.vo2_max!)
-    const validCooperDistance = groupEvaluations.filter(e => e.cooper_test_distance !== null).map(e => e.cooper_test_distance!)
-    const validBodyFat = groupEvaluations.filter(e => e.body_fat_percentage !== null).map(e => e.body_fat_percentage!)
-    const validMuscleMass = groupEvaluations.filter(e => e.muscle_mass !== null).map(e => e.muscle_mass!)
-    
+
+  Object.entries(ageGroups).forEach(([ageGroup, groupTests]) => {
+    const validVo2Max = groupTests.filter(test => test.vo2_max !== null).map(test => test.vo2_max!)
+    const validCooperDistance = groupTests.filter(test => test.cooper_test_distance !== null).map(test => test.cooper_test_distance!)
+    const validBodyFat = groupTests.filter(test => test.body_fat_percentage !== null).map(test => test.body_fat_percentage!)
+    const validMuscleMass = groupTests.filter(test => test.muscle_mass !== null).map(test => test.muscle_mass!)
+
     result.push({
       id: `${ageGroup}-calculated`,
       user_id: userId,
       age_group: ageGroup,
-      total_evaluations: groupEvaluations.length,
-      total_students: new Set(groupEvaluations.map(e => e.student_id)).size,
-      avg_vo2_max: validVo2Max.length > 0 ? validVo2Max.reduce((a, b) => a + b, 0) / validVo2Max.length : null,
-      avg_cooper_distance: validCooperDistance.length > 0 ? validCooperDistance.reduce((a, b) => a + b, 0) / validCooperDistance.length : null,
-      avg_body_fat_percentage: validBodyFat.length > 0 ? validBodyFat.reduce((a, b) => a + b, 0) / validBodyFat.length : null,
-      avg_muscle_mass: validMuscleMass.length > 0 ? validMuscleMass.reduce((a, b) => a + b, 0) / validMuscleMass.length : null,
+      total_evaluations: groupTests.length,
+      total_students: new Set(groupTests.map(test => test.student_id)).size,
+      avg_vo2_max: validVo2Max.length > 0 ? validVo2Max.reduce((sum, value) => sum + value, 0) / validVo2Max.length : null,
+      avg_cooper_distance: validCooperDistance.length > 0 ? validCooperDistance.reduce((sum, value) => sum + value, 0) / validCooperDistance.length : null,
+      avg_body_fat_percentage: validBodyFat.length > 0 ? validBodyFat.reduce((sum, value) => sum + value, 0) / validBodyFat.length : null,
+      avg_muscle_mass: validMuscleMass.length > 0 ? validMuscleMass.reduce((sum, value) => sum + value, 0) / validMuscleMass.length : null,
       avg_resting_heart_rate: null,
-      total_cooper_distance: validCooperDistance.reduce((a, b) => a + b, 0),
-      total_vo2_max: validVo2Max.reduce((a, b) => a + b, 0),
+      total_cooper_distance: validCooperDistance.reduce((sum, value) => sum + value, 0),
+      total_vo2_max: validVo2Max.reduce((sum, value) => sum + value, 0),
       vo2_max_p25: null,
       vo2_max_p50: null,
       vo2_max_p75: null,
@@ -598,7 +611,17 @@ export const formatters = {
   muscleMass: (value: number) => `${value.toFixed(1)} kg`,
   restingHeartRate: (value: number) => `${Math.round(value)} bpm`,
   percentage: (value: number) => `${value > 0 ? '+' : ''}${value.toFixed(1)}%`,
-  count: (value: number) => value.toString()
+  count: (value: number) => value.toString(),
+  getPeriodLabel: (period: 'last30' | 'last90' | 'last180' | 'all'): string => {
+    const labels: Record<'last30' | 'last90' | 'last180' | 'all', string> = {
+      last30: 'Últimos 30 dias',
+      last90: 'Últimos 90 dias',
+      last180: 'Últimos 180 dias',
+      all: 'Todo o período'
+    }
+
+    return labels[period] ?? 'Todo o período'
+  }
 }
 
 /**

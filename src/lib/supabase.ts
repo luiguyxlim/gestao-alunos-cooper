@@ -121,6 +121,16 @@ export type Database = {
           vo2_max: number | null
           cooper_test_distance: number | null
           plank_time: number | null
+          // Prescrição de treino / avaliação de desempenho
+          intensity_percentage: number | null
+          training_time: number | null
+          training_distance: number | null
+          training_velocity: number | null
+          training_intensity: number | null
+          total_o2_consumption: number | null
+          caloric_expenditure: number | null
+          weight_loss: number | null
+          body_weight: number | null
           // Testes de flexibilidade
           sit_and_reach: number | null
           shoulder_flexibility: string | null
@@ -162,6 +172,16 @@ export type Database = {
           vo2_max?: number | null
           cooper_test_distance?: number | null
           plank_time?: number | null
+          // Prescrição de treino / avaliação de desempenho
+          intensity_percentage?: number | null
+          training_time?: number | null
+          training_distance?: number | null
+          training_velocity?: number | null
+          training_intensity?: number | null
+          total_o2_consumption?: number | null
+          caloric_expenditure?: number | null
+          weight_loss?: number | null
+          body_weight?: number | null
           // Testes de flexibilidade
           sit_and_reach?: number | null
           shoulder_flexibility?: string | null
@@ -203,6 +223,16 @@ export type Database = {
           vo2_max?: number | null
           cooper_test_distance?: number | null
           plank_time?: number | null
+          // Prescrição de treino / avaliação de desempenho
+          intensity_percentage?: number | null
+          training_time?: number | null
+          training_distance?: number | null
+          training_velocity?: number | null
+          training_intensity?: number | null
+          total_o2_consumption?: number | null
+          caloric_expenditure?: number | null
+          weight_loss?: number | null
+          body_weight?: number | null
           // Testes de flexibilidade
           sit_and_reach?: number | null
           shoulder_flexibility?: string | null

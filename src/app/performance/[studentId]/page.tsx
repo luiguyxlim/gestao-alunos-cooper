@@ -132,7 +132,7 @@ export default function StudentPerformancePage() {
       const { data: testsData, error: testsError } = await supabase
         .from('performance_tests')
         .select('*')
-        .eq('student_id', studentId)
+        .eq('evaluatee_id', studentId)
         .order('test_date', { ascending: true });
       
       if (testsError) {

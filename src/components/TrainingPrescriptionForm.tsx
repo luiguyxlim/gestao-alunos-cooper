@@ -1,15 +1,18 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
 import { Loader2, Calculator, User, Target, Zap, Clock, MapPin } from 'lucide-react'
 import { Student } from '@/lib/actions/students'
 import { getCooperTestsByStudent } from '@/lib/actions/performance-evaluation'
 import { calculatePerformanceEvaluation } from '@/lib/performance-evaluation'
+import { createPerformanceTest } from '@/lib/actions/tests'
 
 interface CooperTest {
   id: string
@@ -24,12 +27,15 @@ interface TrainingPrescriptionFormProps {
 }
 
 export default function TrainingPrescriptionForm({ students, selectedStudentId }: TrainingPrescriptionFormProps) {
+  const router = useRouter()
   const [selectedStudent, setSelectedStudent] = useState<string>('')
   const [selectedCooperTest, setSelectedCooperTest] = useState<string>('')
   const [cooperTests, setCooperTests] = useState<CooperTest[]>([])
   const [intensityPercentage, setIntensityPercentage] = useState<string>('70')
   const [trainingTime, setTrainingTime] = useState<string>('40')
   const [isLoadingTests, setIsLoadingTests] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState(false)
   const [error, setError] = useState<string>('')
   const [calculations, setCalculations] = useState<{
     vo2Max: number
@@ -117,6 +123,59 @@ export default function TrainingPrescriptionForm({ students, selectedStudentId }
     }
   }, [selectedCooperTest, intensityPercentage, trainingTime, cooperTests, safeStudents, selectedStudent])
 
+  const handleSaveTest = async () => {
+    if (!calculations || !selectedStudent || !selectedCooperTest) {
+      setError('Dados insuficientes para salvar o teste')
+      return
+    }
+
+    setIsSaving(true)
+    setError('')
+
+    try {
+      const formData = new FormData()
+      formData.append('student_id', selectedStudent)
+      formData.append('test_date', new Date().toISOString().split('T')[0])
+      formData.append('cooper_test_id', selectedCooperTest)
+      formData.append('intensity_percentage', intensityPercentage)
+      formData.append('training_time', trainingTime)
+      formData.append('notes', `Prescrição de treinamento baseada no teste de Cooper`)
+      
+      // Dados calculados
+      formData.append('vo2_max', calculations.vo2Max.toString())
+      formData.append('training_intensity', calculations.trainingIntensity.toString())
+      formData.append('training_velocity', calculations.trainingVelocity.toString())
+      formData.append('training_distance', calculations.trainingDistance.toString())
+      formData.append('total_o2_consumption', calculations.totalO2Consumption.toString())
+      formData.append('caloric_expenditure', calculations.caloricExpenditure.toString())
+      formData.append('weight_loss', calculations.weightLoss.toString())
+      
+      const student = safeStudents.find(s => s.id === selectedStudent)
+      if (student?.weight) {
+        formData.append('body_weight', student.weight.toString())
+      }
+
+      await createPerformanceTest(formData)
+      setSaveSuccess(true)
+      
+      // Reset form after successful save
+      setTimeout(() => {
+        setSaveSuccess(false)
+        setCalculations(null)
+        setSelectedStudent('')
+        setSelectedCooperTest('')
+        setIntensityPercentage('70')
+        setTrainingTime('40')
+      }, 2000)
+
+    } catch (error) {
+      console.error('Erro ao salvar teste:', error)
+      setError(error instanceof Error ? error.message : 'Erro ao salvar teste')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8">
@@ -133,6 +192,18 @@ export default function TrainingPrescriptionForm({ students, selectedStudentId }
             <p className="text-slate-600 text-lg">
               Baseada no teste de Cooper para prescrição precisa de treinamento
             </p>
+          </div>
+
+          {/* Botão de Voltar */}
+          <div className="mb-6">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push('/tests')}
+              className="text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
+            >
+              ← Voltar para Testes
+            </Button>
           </div>
 
           <Card className="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl border border-white/20">
@@ -319,13 +390,13 @@ export default function TrainingPrescriptionForm({ students, selectedStudentId }
                           </div>
                         </div>
 
-                        {/* Intensidade do Treinamento */}
+                        {/* Gasto de Oxigênio */}
                         <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300">
                           <div className="flex items-center gap-3 mb-3">
                             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white text-sm">
                               ⚡
                             </div>
-                            <span className="text-sm font-bold text-slate-700">Intensidade do Treinamento</span>
+                            <span className="text-sm font-bold text-slate-700">Gasto de Oxigênio</span>
                           </div>
                           <div className="text-2xl font-black text-blue-600">
                             {calculations.trainingIntensity.toFixed(2)} ml/kg/min
@@ -409,6 +480,49 @@ export default function TrainingPrescriptionForm({ students, selectedStudentId }
                             {calculations.weightLoss.toFixed(1)}g
                           </div>
                         </div>
+                      </div>
+                      
+                      {/* Botão de Salvar e Mensagens */}
+                      <div className="mt-8 space-y-4">
+                        {/* Botão de Salvar */}
+                        <div className="flex justify-center">
+                          <Button
+                            onClick={handleSaveTest}
+                            disabled={isSaving}
+                            className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+                          >
+                            {isSaving ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Salvando...
+                              </>
+                            ) : (
+                              <>
+                                💾 Salvar Teste de Performance
+                              </>
+                            )}
+                          </Button>
+                        </div>
+
+                        {/* Mensagem de Sucesso */}
+                        {saveSuccess && (
+                          <Alert className="bg-emerald-50 border-emerald-200 text-emerald-800">
+                            <AlertDescription className="flex items-center gap-2">
+                              <span className="text-emerald-600">✅</span>
+                              Teste de performance salvo com sucesso! Os dados foram registrados no banco de dados.
+                            </AlertDescription>
+                          </Alert>
+                        )}
+
+                        {/* Mensagem de Erro */}
+                        {error && (
+                          <Alert className="bg-red-50 border-red-200 text-red-800">
+                            <AlertDescription className="flex items-center gap-2">
+                              <span className="text-red-600">❌</span>
+                              {error}
+                            </AlertDescription>
+                          </Alert>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

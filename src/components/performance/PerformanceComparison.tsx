@@ -8,19 +8,37 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ScatterChart, Scatter, Cell } from 'recharts';
 import { formatters } from '@/lib/performance-utils';
 import { createClient } from '@/lib/supabase';
+import { useAuth } from '@/hooks/useAuth';
 
 // Removed unused interface: Student
 
 interface StudentPerformance {
   evaluatee_id: string;
   student_name: string;
-  age: number;
-  gender: 'M' | 'F';
-  latest_test_date: string;
+  age: number | null;
+  gender: string | null;
+  latest_test_date: string | null;
   cooper_test_distance: number;
   vo2_max: number;
   evaluation: string;
   improvement_percentage: number;
+}
+
+interface StudentDetails {
+  id: string;
+  name: string | null;
+  birth_date: string | null;
+  gender: string | null;
+}
+
+interface PerformanceTestRow {
+  id: string;
+  student_id: string;
+  test_date: string;
+  cooper_test_distance: number | null;
+  vo2_max: number | null;
+  evaluation: string | null;
+  students: StudentDetails | null;
 }
 
 interface ComparisonFilters {
@@ -41,6 +59,7 @@ export default function PerformanceComparison() {
     evaluation: 'all',
     sortBy: 'cooper_test_distance'
   });
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     setIsClient(true);
@@ -49,74 +68,219 @@ export default function PerformanceComparison() {
 
 
   const loadStudentsPerformance = useCallback(async () => {
+    if (!user?.id) {
+      return;
+    }
     try {
       setLoading(true);
       
       const supabase = createClient();
-      // Buscar todos os alunos com seus últimos testes
+
+      const parseNumeric = (value: unknown): number | null => {
+        if (typeof value === 'number' && Number.isFinite(value)) return value;
+        if (typeof value === 'string' && value.trim() !== '') {
+          const parsed = Number(value);
+          if (Number.isFinite(parsed)) return parsed;
+        }
+        return null;
+      };
+
+      const normalizeStudent = (student: unknown): StudentDetails | null => {
+        if (!student || typeof student !== 'object') return null;
+        const typed = student as Partial<StudentDetails> & Record<string, unknown>;
+        const id = typeof typed.id === 'string' ? typed.id : null;
+        if (!id) return null;
+
+        return {
+          id,
+          name: typeof typed.name === 'string' ? typed.name : null,
+          birth_date: typeof typed.birth_date === 'string' ? typed.birth_date : null,
+          gender: typeof typed.gender === 'string' ? typed.gender : null
+        };
+      };
+
+      const normalizeRow = (row: unknown): PerformanceTestRow | null => {
+        if (!row || typeof row !== 'object') return null;
+        const typedRow = row as Record<string, unknown>;
+        const id = typeof typedRow.id === 'string' ? typedRow.id : null;
+        const studentId = typeof typedRow.student_id === 'string' ? typedRow.student_id : null;
+        const testDate = typeof typedRow.test_date === 'string' ? typedRow.test_date : null;
+
+        if (!id || !studentId || !testDate) {
+          return null;
+        }
+
+        const studentData = Array.isArray(typedRow?.students)
+          ? typedRow.students[0]
+          : typedRow?.students;
+
+        return {
+          id,
+          student_id: studentId,
+          test_date: testDate,
+          cooper_test_distance: parseNumeric(typedRow.cooper_test_distance),
+          vo2_max: parseNumeric(typedRow.vo2_max),
+          evaluation: null,
+          students: normalizeStudent(studentData)
+        };
+      };
+
       const { data, error } = await supabase
-        .from('students')
+        .from('performance_tests')
         .select(`
           id,
-          name,
-          birth_date,
-          gender,
-          performance_tests!inner (
-            test_date,
-            cooper_test_distance,
-            vo2_max
+          student_id,
+          test_date,
+          cooper_test_distance,
+          vo2_max,
+          students:students!performance_tests_student_id_fkey (
+            id,
+            name,
+            birth_date,
+            gender
           )
         `)
-      
-      if (error) throw error;
-      
-      // Processar dados para obter o último teste de cada aluno
-      const studentsPerformance: StudentPerformance[] = [];
-      
-      for (const student of data || []) {
-        const tests = student.performance_tests;
-        if (tests && tests.length > 0) {
-          // Ordenar testes por data (mais recente primeiro)
-          const sortedTests = tests.sort((a, b) => 
-            new Date(b.test_date).getTime() - new Date(a.test_date).getTime()
-          );
-          
-          const latestTest = sortedTests[0];
-          const age = calculateAge(student.birth_date);
-          
-          // Calcular melhoria (se houver mais de um teste)
-          let improvementPercentage = 0;
-          if (sortedTests.length > 1) {
-            const firstTest = sortedTests[sortedTests.length - 1];
-            improvementPercentage = ((latestTest.cooper_test_distance - firstTest.cooper_test_distance) / firstTest.cooper_test_distance) * 100;
-          }
-          
-          studentsPerformance.push({
-            evaluatee_id: student.id,
-            student_name: student.name,
-            age,
-            gender: student.gender,
-            latest_test_date: latestTest.test_date,
-            cooper_test_distance: latestTest.cooper_test_distance,
-            vo2_max: latestTest.vo2_max,
-            evaluation: 'N/A', // Campo não existe na tabela, usando valor padrão
-            improvement_percentage: improvementPercentage
-          });
+        .eq('user_id', user.id)
+        .order('test_date', { ascending: false });
+
+      let rows: PerformanceTestRow[] = [];
+
+      if (error) {
+        const errorPayload = {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        };
+
+        console.warn('Erro ao buscar testes com join (fallback aplicado):', errorPayload);
+
+        const isRelationshipError = error.code === 'PGRST200' || error.message?.includes('relationship') || error.message?.includes('foreign reference');
+
+        if (!isRelationshipError) {
+          throw error;
         }
+
+        const fallbackTests = await supabase
+          .from('performance_tests')
+          .select('id, student_id, test_date, cooper_test_distance, vo2_max')
+          .eq('user_id', user.id)
+          .order('test_date', { ascending: false });
+
+        if (fallbackTests.error) {
+          throw fallbackTests.error;
+        }
+
+        rows = (fallbackTests.data ?? [])
+          .map(normalizeRow)
+          .filter((row): row is PerformanceTestRow => row !== null);
+
+        const studentIds = Array.from(new Set(rows.map(test => test.student_id))).filter(Boolean);
+
+        if (studentIds.length > 0) {
+          const { data: studentsData, error: studentsError } = await supabase
+            .from('students')
+            .select('id, name, birth_date, gender')
+            .eq('user_id', user.id)
+            .in('id', studentIds as string[]);
+
+          if (studentsError) {
+            console.warn('Erro ao buscar dados dos alunos (fallback):', {
+              code: studentsError.code,
+              message: studentsError.message,
+              details: studentsError.details,
+              hint: studentsError.hint
+            });
+          } else {
+            const studentsMap = new Map<string, StudentDetails>();
+
+            (studentsData ?? []).forEach(student => {
+              const normalized = normalizeStudent(student);
+              if (normalized) {
+                studentsMap.set(normalized.id, normalized);
+              }
+            });
+
+            rows = rows.map(test => ({
+              ...test,
+              students: studentsMap.get(test.student_id) ?? test.students
+            }));
+          }
+        }
+      } else {
+        rows = (data ?? [])
+          .map(normalizeRow)
+          .filter((row): row is PerformanceTestRow => row !== null);
       }
-      
+
+      const testsByStudent = new Map<string, PerformanceTestRow[]>();
+
+      rows.forEach(test => {
+        if (!test?.student_id) return;
+
+        if (!testsByStudent.has(test.student_id)) {
+          testsByStudent.set(test.student_id, []);
+        }
+
+        testsByStudent.get(test.student_id)!.push(test);
+      });
+
+      const studentsPerformance: StudentPerformance[] = Array.from(testsByStudent.entries()).map(([studentId, studentTests]) => {
+        const sortedTests = [...studentTests].sort((a, b) =>
+          new Date(b.test_date).getTime() - new Date(a.test_date).getTime()
+        );
+
+        const latestTest = sortedTests[0];
+        const studentDetails = latestTest.students;
+
+        const age = calculateAge(studentDetails?.birth_date ?? null);
+
+        const latestWithMetrics = sortedTests.find(testItem => (
+          typeof testItem.cooper_test_distance === 'number' && testItem.cooper_test_distance !== null && !Number.isNaN(testItem.cooper_test_distance)
+        ) || (
+          typeof testItem.vo2_max === 'number' && testItem.vo2_max !== null && !Number.isNaN(testItem.vo2_max)
+        ));
+
+        const earliestWithDistance = [...sortedTests].reverse().find(testItem =>
+          typeof testItem.cooper_test_distance === 'number' && testItem.cooper_test_distance !== null && !Number.isNaN(testItem.cooper_test_distance)
+        );
+
+        const latestDistance = latestWithMetrics?.cooper_test_distance ?? 0;
+        const latestVo2 = latestWithMetrics?.vo2_max ?? 0;
+        const firstDistance = earliestWithDistance?.cooper_test_distance ?? 0;
+
+        const improvementPercentage = firstDistance && latestDistance
+          ? ((latestDistance - firstDistance) / firstDistance) * 100
+          : 0;
+
+        return {
+          evaluatee_id: studentId,
+          student_name: studentDetails?.name || 'Aluno sem cadastro',
+          age,
+          gender: studentDetails?.gender || null,
+          latest_test_date: latestTest?.test_date || null,
+          cooper_test_distance: latestDistance || 0,
+          vo2_max: latestVo2 || 0,
+          evaluation: 'N/A',
+          improvement_percentage: improvementPercentage
+        };
+      });
+
       setStudents(studentsPerformance);
       
     } catch (error) {
       console.error('Erro ao carregar dados de performance:', error);
+      setStudents([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.id]);
 
-  const calculateAge = (birthDate: string): number => {
-    const today = new Date();
+  const calculateAge = (birthDate: string | null): number | null => {
+    if (!birthDate) return null;
     const birth = new Date(birthDate);
+    if (Number.isNaN(birth.getTime())) return null;
+    const today = new Date();
     let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
@@ -125,7 +289,8 @@ export default function PerformanceComparison() {
     return age;
   };
 
-  const getAgeGroup = (age: number): string => {
+  const getAgeGroup = (age: number | null): string => {
+    if (age === null || Number.isNaN(age)) return 'unknown';
     if (age < 18) return 'under18';
     if (age <= 25) return '18-25';
     if (age <= 35) return '26-35';
@@ -141,22 +306,41 @@ export default function PerformanceComparison() {
       'Bom': '#f59e0b',
       'Regular': '#8b5cf6',
       'Fraco': '#ef4444',
-      'Muito Fraco': '#6b7280'
-    }
-    return colorMap[evaluation] || '#6b7280'
-  }
+      'Muito Fraco': '#6b7280',
+      'N/A': '#9ca3af'
+    };
+    return colorMap[evaluation] || '#6b7280';
+  };
+
+  const formatGender = (gender: string | null): string => {
+    if (!gender) return 'Não informado';
+    const normalized = gender.toLowerCase();
+    if (normalized.startsWith('m')) return 'Masculino';
+    if (normalized.startsWith('f')) return 'Feminino';
+    return 'Outro';
+  };
 
   const applyFilters = useCallback(() => {
     let filtered = [...students];
     
     // Filtro por faixa etária
     if (filters.ageGroup !== 'all') {
-      filtered = filtered.filter(student => getAgeGroup(student.age) === filters.ageGroup);
+      filtered = filtered.filter(student => student.age !== null && getAgeGroup(student.age) === filters.ageGroup);
     }
     
     // Filtro por gênero
     if (filters.gender !== 'all') {
-      filtered = filtered.filter(student => student.gender === filters.gender);
+    filtered = filtered.filter(student => {
+      const normalizedGender = (student.gender || '').toLowerCase();
+      if (!normalizedGender) return false;
+      if (filters.gender === 'masculino') {
+        return normalizedGender.startsWith('m');
+      }
+      if (filters.gender === 'feminino') {
+        return normalizedGender.startsWith('f');
+      }
+      return !normalizedGender.startsWith('m') && !normalizedGender.startsWith('f');
+    });
     }
     
     // Filtro por avaliação
@@ -184,8 +368,10 @@ export default function PerformanceComparison() {
   }, [students, filters]);
 
   useEffect(() => {
-    loadStudentsPerformance();
-  }, [loadStudentsPerformance]);
+    if (!authLoading) {
+      loadStudentsPerformance();
+    }
+  }, [authLoading, loadStudentsPerformance]);
 
   useEffect(() => {
     applyFilters();
@@ -193,6 +379,7 @@ export default function PerformanceComparison() {
 
   const getTopPerformers = (metric: 'cooper_test_distance' | 'vo2_max', count: number = 5) => {
     return [...filteredStudents]
+      .filter(student => student[metric] > 0)
       .sort((a, b) => b[metric] - a[metric])
       .slice(0, count)
       .map((student, index) => ({
@@ -202,17 +389,19 @@ export default function PerformanceComparison() {
   };
 
   const getScatterData = () => {
-    return filteredStudents.map(student => ({
-      x: student.cooper_test_distance,
-      y: student.vo2_max,
-      name: student.student_name,
-      evaluation: student.evaluation,
-      age: student.age,
-      gender: student.gender
-    }));
+    return filteredStudents
+      .filter(student => student.cooper_test_distance > 0 && student.vo2_max > 0)
+      .map(student => ({
+        x: student.cooper_test_distance,
+        y: student.vo2_max,
+        name: student.student_name,
+        evaluation: student.evaluation,
+        age: student.age,
+        gender: student.gender
+      }));
   };
 
-  if (!isClient || loading) {
+  if (!isClient || loading || authLoading) {
     return (
       <div className="space-y-6">
         <div className="animate-pulse space-y-4">
@@ -249,7 +438,7 @@ export default function PerformanceComparison() {
               <label className="text-sm font-medium mb-2 block">Faixa Etária</label>
               <Select value={filters.ageGroup} onValueChange={(value) => setFilters({...filters, ageGroup: value})}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Todas" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as idades</SelectItem>
@@ -264,23 +453,24 @@ export default function PerformanceComparison() {
             
             <div>
               <label className="text-sm font-medium mb-2 block">Gênero</label>
-              <Select value={filters.gender} onValueChange={(value) => setFilters({...filters, gender: value})}>
+              <Select value={filters.gender} onValueChange={(value) => setFilters({ ...filters, gender: value })}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="M">Masculino</SelectItem>
-                  <SelectItem value="F">Feminino</SelectItem>
+                  <SelectItem value="masculino">Masculino</SelectItem>
+                  <SelectItem value="feminino">Feminino</SelectItem>
+                  <SelectItem value="outro">Outro</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             
             <div>
               <label className="text-sm font-medium mb-2 block">Avaliação</label>
-              <Select value={filters.evaluation} onValueChange={(value) => setFilters({...filters, evaluation: value})}>
+              <Select value={filters.evaluation} onValueChange={(value) => setFilters({ ...filters, evaluation: value })}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Todas" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas</SelectItem>
@@ -296,9 +486,9 @@ export default function PerformanceComparison() {
             
             <div>
               <label className="text-sm font-medium mb-2 block">Ordenar por</label>
-              <Select value={filters.sortBy} onValueChange={(value) => setFilters({...filters, sortBy: value})}>
+              <Select value={filters.sortBy} onValueChange={(value) => setFilters({ ...filters, sortBy: value })}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Distância Cooper" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="cooper_test_distance">Distância Cooper</SelectItem>
@@ -330,7 +520,12 @@ export default function PerformanceComparison() {
               <Target className="w-5 h-5 text-green-600" />
             </div>
             <div className="text-2xl font-bold text-gray-900">
-              {filteredStudents.length > 0 ? formatters.cooperDistance(filteredStudents.reduce((sum, s) => sum + s.cooper_test_distance, 0) / filteredStudents.length) : '0m'}
+              {(() => {
+                const valid = filteredStudents.filter(student => student.cooper_test_distance > 0);
+                if (valid.length === 0) return '0m';
+                const average = valid.reduce((sum, s) => sum + s.cooper_test_distance, 0) / valid.length;
+                return formatters.cooperDistance(average);
+              })()}
             </div>
           </div>
           <div className="text-sm text-gray-600 font-medium">Distância Média</div>
@@ -342,7 +537,12 @@ export default function PerformanceComparison() {
               <BarChart3 className="w-5 h-5 text-purple-600" />
             </div>
             <div className="text-2xl font-bold text-gray-900">
-              {filteredStudents.length > 0 ? formatters.vo2Max(filteredStudents.reduce((sum, s) => sum + s.vo2_max, 0) / filteredStudents.length) : '0'}
+              {(() => {
+                const valid = filteredStudents.filter(student => student.vo2_max > 0);
+                if (valid.length === 0) return '0';
+                const average = valid.reduce((sum, s) => sum + s.vo2_max, 0) / valid.length;
+                return formatters.vo2Max(average);
+              })()}
             </div>
           </div>
           <div className="text-sm text-gray-600 font-medium">VO2 Médio</div>
@@ -449,7 +649,8 @@ export default function PerformanceComparison() {
                 labelFormatter={(label, payload) => {
                   if (payload && payload[0]) {
                     const data = payload[0].payload;
-                    return `${data.name} (${data.age} anos, ${data.gender === 'M' ? 'M' : 'F'})`;
+                    const ageLabel = data.age ? `${data.age} anos` : 'Idade não informada';
+                    return `${data.name} (${ageLabel}, ${formatGender(data.gender)})`;
                   }
                   return '';
                 }}
@@ -490,7 +691,7 @@ export default function PerformanceComparison() {
                   <div>
                     <div className="font-medium">{student.student_name}</div>
                     <div className="text-sm text-gray-600">
-                      {student.age} anos • {student.gender === 'M' ? 'Masculino' : 'Feminino'}
+                      {student.age ? `${student.age} anos` : 'Idade não informada'} • {formatGender(student.gender)}
                     </div>
                   </div>
                 </div>

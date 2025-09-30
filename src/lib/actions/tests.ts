@@ -390,3 +390,77 @@ export async function getTestsStats(studentId?: string) {
     lastTest
   }
 }
+
+export async function createPerformanceTest(formData: FormData) {
+  const supabase = await createServerSupabaseClient()
+  
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
+  const studentId = formData.get('student_id') as string
+  const testDate = formData.get('test_date') as string
+  const cooperTestId = formData.get('cooper_test_id') as string
+  const intensityPercentage = formData.get('intensity_percentage') ? parseFloat(formData.get('intensity_percentage') as string) : null
+  const trainingTime = formData.get('training_time') ? parseFloat(formData.get('training_time') as string) : null
+  const notes = formData.get('notes') as string
+
+  // Dados calculados da prescrição
+  const vo2Max = formData.get('vo2_max') ? parseFloat(formData.get('vo2_max') as string) : null
+  const trainingIntensity = formData.get('training_intensity') ? parseFloat(formData.get('training_intensity') as string) : null
+  const trainingVelocity = formData.get('training_velocity') ? parseFloat(formData.get('training_velocity') as string) : null
+  const trainingDistance = formData.get('training_distance') ? parseFloat(formData.get('training_distance') as string) : null
+  const totalO2Consumption = formData.get('total_o2_consumption') ? parseFloat(formData.get('total_o2_consumption') as string) : null
+  const caloricExpenditure = formData.get('caloric_expenditure') ? parseFloat(formData.get('caloric_expenditure') as string) : null
+  const weightLoss = formData.get('weight_loss') ? parseFloat(formData.get('weight_loss') as string) : null
+  const bodyWeight = formData.get('body_weight') ? parseFloat(formData.get('body_weight') as string) : null
+
+  if (!studentId || !testDate || !cooperTestId) {
+    throw new Error('Campos obrigatórios não preenchidos')
+  }
+
+  console.log('Creating performance test with data:', {
+    studentId,
+    testDate,
+    cooperTestId,
+    vo2Max,
+    intensityPercentage,
+    trainingTime
+  })
+
+  const { data, error } = await supabase
+    .from('performance_tests')
+    .insert({
+      user_id: user.id,
+      student_id: studentId,
+      test_date: testDate,
+      test_type: 'performance_evaluation',
+      notes,
+      vo2_max: vo2Max,
+      intensity_percentage: intensityPercentage,
+      training_time: trainingTime,
+      body_weight: bodyWeight,
+      training_distance: trainingDistance,
+      training_intensity: trainingIntensity,
+      training_velocity: trainingVelocity,
+      total_o2_consumption: totalO2Consumption,
+      caloric_expenditure: caloricExpenditure,
+      weight_loss: weightLoss
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error creating performance test:', error)
+    throw new Error(`Erro ao criar teste de performance: ${error.message}`)
+  }
+
+  revalidatePath('/tests')
+  revalidatePath(`/evaluatees/${studentId}`)
+  
+  return data
+}

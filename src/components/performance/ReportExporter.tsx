@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,57 +8,77 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Download, FileText, Users, TrendingUp } from 'lucide-react';
 import { formatters } from '@/lib/performance-utils';
 import { createClient } from '@/lib/supabase';
+import { fetchStudentsWithTests, type ReportStudent } from '@/lib/reports';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-
-// Extend jsPDF type to include autoTable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: {
-      startY?: number;
-      head?: string[][];
-      body?: string[][];
-      theme?: string;
-      styles?: { fontSize?: number };
-      headStyles?: { fillColor?: number[] };
-    }) => jsPDF;
-  }
-}
+import autoTable from 'jspdf-autotable';
 
 interface ReportOptions {
   type: 'individual' | 'group' | 'comparison';
   period: 'last30' | 'last90' | 'last180' | 'all';
   format: 'summary' | 'detailed';
   includeCharts: boolean;
-}
-
-interface StudentData {
-  id: string;
-  name: string;
-  email: string;
-  birth_date: string;
-  gender: 'M' | 'F';
-  tests: PerformanceTest[];
+  includePerf: boolean;
+  includePresc: boolean;
 }
 
 interface PerformanceTest {
   id: string;
   test_date: string;
-  cooper_test_distance: number;
-  vo2_max: number;
-  evaluation: string;
-  notes?: string;
+  test_type: string | null;
+  cooper_test_distance: number | null;
+  vo2_max: number | null;
+  intensity_percentage: number | null;
+  training_time: number | null;
+  training_distance: number | null;
+  training_velocity: number | null;
+  training_intensity: number | null;
+  total_o2_consumption: number | null;
+  caloric_expenditure: number | null;
+  notes?: string | null;
 }
+
+// number parsing handled in reports util
+
+const formatPercentageValue = (value: number | null): string => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return `${value.toFixed(0)}%`
+  }
+  return 'N/A'
+}
+
+const formatNumberWithUnit = (value: number | null, unit: string, fractionDigits = 1): string => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return `${value.toFixed(fractionDigits)} ${unit}`
+  }
+  return 'N/A'
+}
+
+const formatMeters = (value: number | null): string => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    if (value >= 1000) {
+      return `${(value / 1000).toFixed(2)} km`
+    }
+    return `${value.toFixed(0)} m`
+  }
+  return 'N/A'
+}
+
+const formatMlPerKgMin = (value: number | null): string => formatNumberWithUnit(value, 'ml/kg/min', 2)
+const formatMetersPerMinute = (value: number | null): string => formatNumberWithUnit(value, 'm/min', 2)
+const formatLiters = (value: number | null): string => formatNumberWithUnit(value, 'L', 2)
+const formatCalories = (value: number | null): string => formatNumberWithUnit(value, 'kcal', 0)
 
 export default function ReportExporter() {
   const [options, setOptions] = useState<ReportOptions>({
     type: 'group',
     period: 'last90',
     format: 'summary',
-    includeCharts: false
+    includeCharts: false,
+    includePerf: true,
+    includePresc: true
   });
   const [selectedStudent, setSelectedStudent] = useState<string>('');
-  const [students, setStudents] = useState<StudentData[]>([]);
+  const [students, setStudents] = useState<ReportStudent[]>([]);
   const [loading, setLoading] = useState(false);
   const [studentsLoaded, setStudentsLoaded] = useState(false);
   const [isClient, setIsClient] = useState(false);
@@ -67,54 +87,54 @@ export default function ReportExporter() {
     setIsClient(true);
   }, []);
 
-  const loadStudents = async () => {
-    if (studentsLoaded) return;
-    
+  const loadStudents = useCallback(async (): Promise<ReportStudent[]> => {
+    if (studentsLoaded && students.length > 0) {
+      return students;
+    }
+
     try {
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from('students')
-        .select(`
-          id,
-          name,
-          email,
-          birth_date,
-          gender,
-          performance_tests (
-            id,
-            test_date,
-            cooper_test_distance,
-            vo2_max,
-            evaluation,
-            notes
-          )
-        `)
-        .order('name')
-      
-      if (error) throw error;
-      
-      const studentsData = data?.map(student => ({
-        ...student,
-        tests: student.performance_tests || []
-      })) || [];
-      
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError || !authData?.user) {
+        throw authError || new Error('Usuário não autenticado');
+      }
+
+      const studentsData = await fetchStudentsWithTests(authData.user.id, options.period)
+
       setStudents(studentsData);
       setStudentsLoaded(true);
+      return studentsData;
     } catch (error) {
-      console.error('Erro ao carregar alunos:', error);
+      const normalizedError = typeof error === 'object' && error !== null ? (error as Record<string, unknown>) : {};
+      console.error('Erro ao carregar alunos:', {
+        error,
+        message: normalizedError.message,
+        code: normalizedError.code,
+        details: normalizedError.details,
+        hint: normalizedError.hint,
+      });
+      return students;
     }
-  };
+  }, [studentsLoaded, students, options.period]);
 
-  const calculateAge = (birthDate: string): number => {
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      age--;
+  useEffect(() => {
+    if (isClient && !studentsLoaded) {
+      loadStudents();
     }
-    return age;
-  };
+  }, [isClient, studentsLoaded, loadStudents]);
+
+  const calculateAge = (birthDate: string | null): number | null => {
+    if (!birthDate) return null
+    const birth = new Date(birthDate)
+    if (Number.isNaN(birth.getTime())) return null
+    const today = new Date()
+    let age = today.getFullYear() - birth.getFullYear()
+    const monthDiff = today.getMonth() - birth.getMonth()
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--
+    }
+    return age
+  }
 
   const filterTestsByPeriod = (tests: PerformanceTest[], period: string): PerformanceTest[] => {
     if (period === 'all') return tests;
@@ -132,12 +152,24 @@ export default function ReportExporter() {
   };
 
   const generateIndividualReport = async (studentId: string) => {
-    const student = students.find(s => s.id === studentId);
+    const currentStudents = students.length > 0 ? students : await loadStudents();
+    const student = currentStudents.find(s => s.id === studentId);
     if (!student) return;
     
     const filteredTests = filterTestsByPeriod(student.tests, options.period);
+    const performanceTests = filteredTests.filter(test => {
+      const type = (test.test_type || '').toLowerCase();
+      return type.includes('cooper');
+    });
+
+    const prescriptionTests = filteredTests.filter(test => {
+      const type = (test.test_type || '').toLowerCase();
+      return type.includes('performance');
+    });
     
     const pdf = new jsPDF();
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFont('helvetica', 'normal');
     const pageWidth = pdf.internal.pageSize.width;
     
     // Header
@@ -150,60 +182,140 @@ export default function ReportExporter() {
     // Informações do aluno
     pdf.setFontSize(12);
     const age = calculateAge(student.birth_date);
-    pdf.text(`Idade: ${age} anos`, 20, 55);
-    pdf.text(`Gênero: ${student.gender === 'M' ? 'Masculino' : 'Feminino'}`, 20, 65);
-    pdf.text(`Email: ${student.email}`, 20, 75);
-    pdf.text(`Período: ${getPeriodLabel(options.period)}`, 20, 85);
+    pdf.text(`Idade: ${age !== null ? `${age} anos` : 'Não informada'}`, 20, 55);
+    pdf.text(`Gênero: ${formatGender(student.gender)}`, 20, 65);
+    pdf.text(`Email: ${student.email || 'Não informado'}`, 20, 75);
+    pdf.text(`Período: ${formatters.getPeriodLabel(options.period)}`, 20, 85);
     pdf.text(`Data do relatório: ${new Date().toLocaleDateString('pt-BR')}`, 20, 95);
     
-    // Resumo estatístico
-    if (filteredTests.length > 0) {
-      const latestTest = filteredTests[filteredTests.length - 1];
-      const firstTest = filteredTests[0];
-      
-      pdf.setFontSize(14);
-      pdf.text('Resumo Estatístico', 20, 115);
-      
-      pdf.setFontSize(12);
-      pdf.text(`Total de testes: ${filteredTests.length}`, 20, 130);
-      pdf.text(`Último teste: ${new Date(latestTest.test_date).toLocaleDateString('pt-BR')}`, 20, 140);
-      pdf.text(`Distância Cooper atual: ${formatters.cooperDistance(latestTest.cooper_test_distance)}`, 20, 150);
-      pdf.text(`VO2 Máximo atual: ${formatters.vo2Max(latestTest.vo2_max)}`, 20, 160);
-      pdf.text(`Avaliação atual: ${latestTest.evaluation}`, 20, 170);
-      
-      if (filteredTests.length > 1) {
-        const improvement = ((latestTest.cooper_test_distance - firstTest.cooper_test_distance) / firstTest.cooper_test_distance) * 100;
-        pdf.text(`Melhoria no período: ${improvement > 0 ? '+' : ''}${improvement.toFixed(1)}%`, 20, 180);
-      }
-      
-      // Tabela de testes
-      if (options.format === 'detailed') {
-        const tableData = filteredTests.map(test => [
-          new Date(test.test_date).toLocaleDateString('pt-BR'),
-          formatters.cooperDistance(test.cooper_test_distance),
-          formatters.vo2Max(test.vo2_max),
-          test.evaluation,
-          test.notes || '-'
-        ]);
-        
-        pdf.autoTable({
-          startY: 200,
-          head: [['Data', 'Distância Cooper', 'VO2 Máximo', 'Avaliação', 'Observações']],
-          body: tableData,
-          theme: 'grid',
-          styles: { fontSize: 10 },
-          headStyles: { fillColor: [59, 130, 246] }
-        });
-      }
-    } else {
+    if (filteredTests.length === 0) {
       pdf.text('Nenhum teste encontrado no período selecionado.', 20, 115);
     }
+
+    let currentY = 110;
+
+    if (options.includePerf && performanceTests.length > 0) {
+      pdf.setFontSize(18);
+      pdf.setTextColor(37, 99, 235);
+      pdf.text('Testes de Performance (Cooper/VO₂)', 20, currentY);
+      pdf.setTextColor(0, 0, 0);
+      currentY += 10;
+
+      const latestPerf = performanceTests[performanceTests.length - 1];
+      const firstPerf = performanceTests[0];
+
+      const performanceSummaryRows = [
+        ['Total de testes', `${performanceTests.length}`],
+        ['Último teste', new Date(latestPerf.test_date).toLocaleDateString('pt-BR')],
+        ['Distância Cooper atual', formatDistance(latestPerf.cooper_test_distance)],
+        ['VO₂ Máximo atual', formatVo2(latestPerf.vo2_max)]
+      ];
+
+      if (performanceTests.length > 1) {
+        const improvement = calculateImprovement(firstPerf.cooper_test_distance, latestPerf.cooper_test_distance);
+        performanceSummaryRows.push(['Melhoria no período', improvement]);
+      }
+
+      autoTable(pdf, {
+        startY: currentY,
+        head: [['Indicador', 'Valor']],
+        body: performanceSummaryRows,
+        theme: 'striped',
+        headStyles: { fillColor: [37, 99, 235], textColor: 255 },
+        styles: { font: 'helvetica', fontSize: 11, cellPadding: 3 },
+        alternateRowStyles: { fillColor: [239, 246, 255] }
+      });
+
+      currentY = ((pdf as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? currentY) + 10;
+
+      if (options.format === 'detailed') {
+        const performanceTableData = performanceTests.map(test => [
+          new Date(test.test_date).toLocaleDateString('pt-BR'),
+          formatDistance(test.cooper_test_distance),
+          formatVo2(test.vo2_max),
+          test.notes || '-'
+        ]);
+
+        autoTable(pdf, {
+          startY: currentY,
+          head: [['Data', 'Distância Cooper', 'VO₂ Máximo', 'Observações']],
+          body: performanceTableData,
+          theme: 'striped',
+          headStyles: { fillColor: [29, 78, 216], textColor: 255 },
+          styles: { font: 'helvetica', fontSize: 10, cellPadding: 3 },
+          alternateRowStyles: { fillColor: [240, 249, 255] }
+        });
+
+        currentY = ((pdf as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? currentY) + 15;
+      }
+    }
+
+    if (options.includePresc && prescriptionTests.length > 0) {
+      pdf.setFontSize(18);
+      pdf.setTextColor(124, 58, 237);
+      pdf.text('Prescrição de Treino', 20, currentY);
+      pdf.setTextColor(0, 0, 0);
+      currentY += 10;
+
+      const latestPrescription = prescriptionTests[prescriptionTests.length - 1];
+
+      const prescriptionSummary = [
+        ['Última prescrição', new Date(latestPrescription.test_date).toLocaleDateString('pt-BR')],
+        ['VO₂ Máximo base', formatVo2(latestPrescription.vo2_max)],
+        ['Gasto de Oxigênio', formatMlPerKgMin(latestPrescription.training_intensity)],
+        ['Velocidade prescrita', formatMetersPerMinute(latestPrescription.training_velocity)],
+        ['Distância prescrita', formatMeters(latestPrescription.training_distance)],
+        ['Tempo de treino', formatNumberWithUnit(latestPrescription.training_time, 'min', 0)],
+        ['Intensidade', formatPercentageValue(latestPrescription.intensity_percentage)],
+        ['Consumo total de O₂', formatLiters(latestPrescription.total_o2_consumption)],
+        ['Gasto calórico estimado', formatCalories(latestPrescription.caloric_expenditure)]
+      ];
+
+      autoTable(pdf, {
+        startY: currentY,
+        head: [['Indicador', 'Valor']],
+        body: prescriptionSummary,
+        theme: 'striped',
+        headStyles: { fillColor: [124, 58, 237], textColor: 255 },
+        styles: { font: 'helvetica', fontSize: 11, cellPadding: 3 },
+        alternateRowStyles: { fillColor: [245, 243, 255] }
+      });
+
+      currentY = ((pdf as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? currentY) + 10;
+
+      if (options.format === 'detailed') {
+        const prescriptionRows = prescriptionTests.map(test => [
+          new Date(test.test_date).toLocaleDateString('pt-BR'),
+          formatPercentageValue(test.intensity_percentage),
+          formatNumberWithUnit(test.training_time, 'min', 0),
+          formatMeters(test.training_distance),
+          formatMetersPerMinute(test.training_velocity),
+          formatMlPerKgMin(test.training_intensity),
+          formatLiters(test.total_o2_consumption),
+          formatCalories(test.caloric_expenditure),
+          test.notes || '-'
+        ]);
+
+        autoTable(pdf, {
+          startY: currentY,
+          head: [['Data', '% Intensidade', 'Tempo', 'Distância', 'Velocidade', 'Gasto O₂', 'Consumo O₂', 'Gasto Calórico', 'Observações']],
+          body: prescriptionRows,
+          theme: 'striped',
+          headStyles: { fillColor: [99, 102, 241], textColor: 255 },
+          styles: { font: 'helvetica', fontSize: 9, cellPadding: 3 },
+          alternateRowStyles: { fillColor: [240, 245, 255] }
+        });
+      }
+    }
+
     
     pdf.save(`relatorio_${student.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const generateGroupReport = async () => {
+    const currentStudents = students.length > 0 ? students : await loadStudents();
     const pdf = new jsPDF();
+    pdf.setFont('helvetica', 'normal');
     const pageWidth = pdf.internal.pageSize.width;
     
     // Header
@@ -211,83 +323,112 @@ export default function ReportExporter() {
     pdf.text('Relatório Geral de Performance', pageWidth / 2, 20, { align: 'center' });
     
     pdf.setFontSize(12);
-    pdf.text(`Período: ${getPeriodLabel(options.period)}`, 20, 40);
+    pdf.text(`Período: ${formatters.getPeriodLabel(options.period)}`, 20, 40);
     pdf.text(`Data do relatório: ${new Date().toLocaleDateString('pt-BR')}`, 20, 50);
     
     // Estatísticas gerais
     const allTests: PerformanceTest[] = [];
-    const studentsWithTests = students.filter(student => {
-      const filteredTests = filterTestsByPeriod(student.tests, options.period);
+    const studentsWithTests = currentStudents.filter(student => {
+      const filteredTests = filterTestsByPeriod(student.tests, options.period).filter(hasValidMetrics);
       allTests.push(...filteredTests);
       return filteredTests.length > 0;
     });
     
-    pdf.setFontSize(14);
-    pdf.text('Estatísticas Gerais', 20, 70);
-    
-    pdf.setFontSize(12);
-    pdf.text(`Total de alunos: ${students.length}`, 20, 85);
-    pdf.text(`Alunos com testes no período: ${studentsWithTests.length}`, 20, 95);
-    pdf.text(`Total de testes realizados: ${allTests.length}`, 20, 105);
+    const summaryRows = [
+      ['Total de alunos', `${currentStudents.length}`],
+      ['Alunos com testes no período', `${studentsWithTests.length}`],
+      ['Total de testes realizados', `${allTests.length}`]
+    ];
     
     if (allTests.length > 0) {
-      const avgCooper = allTests.reduce((sum, test) => sum + test.cooper_test_distance, 0) / allTests.length;
-      const avgVO2 = allTests.reduce((sum, test) => sum + test.vo2_max, 0) / allTests.length;
+      const avgCooper = averageMetric(allTests.map(test => test.cooper_test_distance));
+      const avgVO2 = averageMetric(allTests.map(test => test.vo2_max));
       
-      pdf.text(`Distância Cooper média: ${formatters.cooperDistance(avgCooper)}`, 20, 115);
-      pdf.text(`VO2 Máximo médio: ${formatters.vo2Max(avgVO2)}`, 20, 125);
-      
-      // Distribuição por avaliação
-      const evaluationCounts: { [key: string]: number } = {};
-      allTests.forEach(test => {
-        evaluationCounts[test.evaluation] = (evaluationCounts[test.evaluation] || 0) + 1;
-      });
-      
-      pdf.setFontSize(14);
-      pdf.text('Distribuição por Avaliação', 20, 145);
-      
-      pdf.setFontSize(12);
-      let yPos = 160;
-      Object.entries(evaluationCounts).forEach(([evaluation, count]) => {
-        const percentage = ((count / allTests.length) * 100).toFixed(1);
-        pdf.text(`${evaluation}: ${count} (${percentage}%)`, 20, yPos);
-        yPos += 10;
-      });
-      
-      // Tabela resumida por aluno
-      if (options.format === 'detailed') {
-        const tableData = studentsWithTests.map(student => {
-          const tests = filterTestsByPeriod(student.tests, options.period);
-          const latestTest = tests[tests.length - 1];
-          const age = calculateAge(student.birth_date);
-          
-          return [
-            student.name,
-            `${age}`,
-            student.gender === 'M' ? 'M' : 'F',
-            `${tests.length}`,
-            formatters.cooperDistance(latestTest.cooper_test_distance),
-            formatters.vo2Max(latestTest.vo2_max),
-            latestTest.evaluation
-          ];
-        });
-        
-        pdf.autoTable({
-          startY: yPos + 20,
-          head: [['Nome', 'Idade', 'Gênero', 'Testes', 'Última Distância', 'Último VO2', 'Última Avaliação']],
-          body: tableData,
-          theme: 'grid',
-          styles: { fontSize: 9 },
-          headStyles: { fillColor: [59, 130, 246] }
-        });
+      summaryRows.push(['Distância Cooper média', formatDistance(avgCooper)]);
+      summaryRows.push(['VO2 Máximo médio', formatVo2(avgVO2)]);
+      const presc = allTests.filter(t => (t.test_type || '').toLowerCase().includes('performance'))
+      if (presc.length > 0) {
+        const avgInt = averageMetric(presc.map(t => t.intensity_percentage))
+        const avgVel = averageMetric(presc.map(t => t.training_velocity))
+        const avgO2  = averageMetric(presc.map(t => t.total_o2_consumption))
+        if (avgInt !== null) summaryRows.push(['Intensidade média', `${Math.round(avgInt)}%`])
+        if (avgVel !== null) summaryRows.push(['Velocidade média', formatMetersPerMinute(avgVel)])
+        if (avgO2  !== null) summaryRows.push(['Consumo total de O₂ médio', formatLiters(avgO2)])
       }
     }
     
+      autoTable(pdf, {
+        startY: 70,
+        head: [['Indicador', 'Valor']],
+        body: summaryRows,
+        theme: 'striped',
+        headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+        styles: { fontSize: 11, cellPadding: 3 },
+        alternateRowStyles: { fillColor: [245, 249, 255] }
+      });
+
+    const summaryFinalY = ((pdf as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? 110) + 10;
+
+    if (options.format === 'detailed' && studentsWithTests.length > 0) {
+      const perfRows = studentsWithTests.map(student => {
+        const tests = filterTestsByPeriod(student.tests, options.period)
+        const perf = tests.filter(t => (t.test_type || '').toLowerCase().includes('cooper'))
+        const last = perf[perf.length - 1]
+        const age = calculateAge(student.birth_date)
+        return [
+          student.name,
+          age !== null ? `${age}` : 'N/A',
+          formatGender(student.gender),
+          last ? new Date(last.test_date).toLocaleDateString('pt-BR') : '—',
+          last ? formatVo2(last.vo2_max) : 'N/A',
+          last ? formatDistance(last.cooper_test_distance) : 'N/A'
+        ]
+      })
+
+      autoTable(pdf, {
+        startY: summaryFinalY,
+        head: [['Nome', 'Idade', 'Gênero', 'Último Teste', 'VO₂', 'Distância']],
+        body: perfRows,
+        theme: 'striped',
+        headStyles: { fillColor: [37, 99, 235], textColor: 255 },
+        styles: { fontSize: 9, cellPadding: 3 },
+        alternateRowStyles: { fillColor: [240, 249, 255] }
+      })
+
+      const afterPerfY = (((pdf as unknown) as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? summaryFinalY) + 12
+
+      const prescRows = studentsWithTests.map(student => {
+        const tests = filterTestsByPeriod(student.tests, options.period)
+        const presc = tests.filter(t => (t.test_type || '').toLowerCase().includes('performance'))
+        const last = presc[presc.length - 1]
+        return [
+          student.name,
+          last ? new Date(last.test_date).toLocaleDateString('pt-BR') : '—',
+          last ? formatPercentageValue(last.intensity_percentage) : 'N/A',
+          last ? formatNumberWithUnit(last.training_time, 'min', 0) : 'N/A',
+          last ? formatMetersPerMinute(last.training_velocity) : 'N/A',
+          last ? formatLiters(last.total_o2_consumption) : 'N/A'
+        ]
+      })
+
+      autoTable(pdf, {
+        startY: afterPerfY,
+        head: [['Aluno', 'Última Prescrição', '% Int', 'Tempo', 'Velocidade', 'Consumo O₂']],
+        body: prescRows,
+        theme: 'striped',
+        headStyles: { fillColor: [124, 58, 237], textColor: 255 },
+        styles: { fontSize: 9, cellPadding: 3 },
+        alternateRowStyles: { fillColor: [245, 243, 255] }
+      })
+    }
+
     pdf.save(`relatorio_geral_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const generateComparisonReport = async () => {
+    const currentStudents = students.length > 0 ? students : await loadStudents();
     const pdf = new jsPDF();
+    pdf.setFont('helvetica', 'normal');
     const pageWidth = pdf.internal.pageSize.width;
     
     // Header
@@ -295,44 +436,90 @@ export default function ReportExporter() {
     pdf.text('Relatório Comparativo de Performance', pageWidth / 2, 20, { align: 'center' });
     
     pdf.setFontSize(12);
-    pdf.text(`Período: ${getPeriodLabel(options.period)}`, 20, 40);
+    pdf.text(`Período: ${formatters.getPeriodLabel(options.period)}`, 20, 40);
     pdf.text(`Data do relatório: ${new Date().toLocaleDateString('pt-BR')}`, 20, 50);
     
     // Análise por faixa etária e gênero
     const groups: { [key: string]: PerformanceTest[] } = {};
     
-    students.forEach(student => {
-      const tests = filterTestsByPeriod(student.tests, options.period);
+    currentStudents.forEach(student => {
+      const tests = filterTestsByPeriod(student.tests, options.period).filter(hasValidMetrics)
       if (tests.length > 0) {
-        const age = calculateAge(student.birth_date);
-        const ageGroup = getAgeGroup(age);
-        const key = `${ageGroup}_${student.gender}`;
-        
-        if (!groups[key]) groups[key] = [];
-        groups[key].push(...tests);
+        const age = calculateAge(student.birth_date)
+        const ageGroup = getAgeGroup(age ?? -1)
+        const key = `${ageGroup}_${formatGender(student.gender)}`
+
+        if (!groups[key]) groups[key] = []
+        groups[key].push(...tests)
       }
-    });
+    })
     
-    pdf.setFontSize(14);
-    pdf.text('Análise por Grupo Demográfico', 20, 70);
-    
-    let yPos = 85;
-    Object.entries(groups).forEach(([groupKey, tests]) => {
+    const comparisonRows = Object.entries(groups).map(([groupKey, tests]) => {
       const [ageGroup, gender] = groupKey.split('_');
-      const avgCooper = tests.reduce((sum, test) => sum + test.cooper_test_distance, 0) / tests.length;
-      const avgVO2 = tests.reduce((sum, test) => sum + test.vo2_max, 0) / tests.length;
-      
-      pdf.setFontSize(12);
-      pdf.text(`${getAgeGroupLabel(ageGroup)} - ${gender === 'M' ? 'Masculino' : 'Feminino'}:`, 20, yPos);
-      pdf.text(`  Testes: ${tests.length}`, 30, yPos + 10);
-      pdf.text(`  Cooper médio: ${formatters.cooperDistance(avgCooper)}`, 30, yPos + 20);
-      pdf.text(`  VO2 médio: ${formatters.vo2Max(avgVO2)}`, 30, yPos + 30);
-      
-      yPos += 50;
+      const avgCooper = averageMetric(tests.map(test => test.cooper_test_distance));
+      const avgVO2 = averageMetric(tests.map(test => test.vo2_max));
+
+      const presc = tests.filter(t => (t.test_type || '').toLowerCase().includes('performance'))
+      const avgVel = averageMetric(presc.map(t => t.training_velocity))
+      const avgO2  = averageMetric(presc.map(t => t.total_o2_consumption))
+
+      return [
+        `${getAgeGroupLabel(ageGroup)} / ${gender}`,
+        `${tests.length}`,
+        formatDistance(avgCooper),
+        formatVo2(avgVO2),
+        avgVel !== null ? formatMetersPerMinute(avgVel) : 'N/A',
+        avgO2 !== null ? formatLiters(avgO2) : 'N/A'
+      ];
     });
+
+    if (comparisonRows.length > 0) {
+      autoTable(pdf, {
+        startY: 70,
+        head: [['Grupo', 'Testes', 'Cooper médio', 'VO₂ médio', 'Velocidade média', 'Consumo O₂ médio']],
+        body: comparisonRows,
+        theme: 'striped',
+        headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+        styles: { fontSize: 11, cellPadding: 3 },
+        alternateRowStyles: { fillColor: [245, 249, 255] }
+      });
+    } else {
+      pdf.setFontSize(12);
+      pdf.text('Sem dados suficientes para gerar a análise comparativa.', 20, 80);
+    }
     
     pdf.save(`relatorio_comparativo_${new Date().toISOString().split('T')[0]}.pdf`);
   };
+
+  const formatGender = (gender: string | null): string => {
+    if (!gender) return 'Não informado'
+    const normalized = gender.toLowerCase()
+    if (normalized.startsWith('m')) return 'Masculino'
+    if (normalized.startsWith('f')) return 'Feminino'
+    return 'Outro'
+  }
+  const formatDistance = (value: number | null): string => {
+    if (typeof value !== 'number' || Number.isNaN(value)) return 'N/A'
+    return formatters.cooperDistance(value)
+  }
+  const formatVo2 = (value: number | null): string => {
+    if (typeof value !== 'number' || Number.isNaN(value)) return 'N/A'
+    return formatters.vo2Max(value)
+  }
+  const hasValidMetrics = (test: PerformanceTest): boolean => {
+    return (typeof test.cooper_test_distance === 'number' && !Number.isNaN(test.cooper_test_distance)) ||
+      (typeof test.vo2_max === 'number' && !Number.isNaN(test.vo2_max))
+  }
+  const averageMetric = (values: Array<number | null>): number | null => {
+    const valid = values.filter((value): value is number => typeof value === 'number' && !Number.isNaN(value))
+    if (valid.length === 0) return null
+    return valid.reduce((sum, value) => sum + value, 0) / valid.length
+  }
+  const calculateImprovement = (initial: number | null, latest: number | null): string => {
+    if (typeof initial !== 'number' || typeof latest !== 'number' || initial === 0) return 'N/A'
+    const change = ((latest - initial) / initial) * 100
+    return `${change > 0 ? '+' : ''}${change.toFixed(1)}%`
+  }
 
   const getAgeGroup = (age: number): string => {
     if (age < 18) return 'under18';
@@ -344,31 +531,67 @@ export default function ReportExporter() {
 
   const getAgeGroupLabel = (group: string): string => {
     const labels: { [key: string]: string } = {
-      'under18': 'Menor de 18',
+      under18: 'Menor de 18',
       '18-25': '18-25 anos',
       '26-35': '26-35 anos',
       '36-45': '36-45 anos',
-      'over45': 'Acima de 45'
-    };
-    return labels[group] || group;
-  };
+      over45: 'Acima de 45'
+    }
+    return labels[group] || group
+  }
 
-  const getPeriodLabel = (period: string): string => {
-    const labels: { [key: string]: string } = {
-      'last30': 'Últimos 30 dias',
-      'last90': 'Últimos 90 dias',
-      'last180': 'Últimos 180 dias',
-      'all': 'Todo o período'
-    };
-    return labels[period] || period;
+  const generateCSVReport = async () => {
+    const currentStudents = students.length > 0 ? students : await loadStudents();
+
+    let csvContent = '';
+    const headers = ['Nome', 'Idade', 'Gênero', 'Data do Teste', 'Distância Cooper (m)', 'VO2 Máximo (ml/kg/min)', 'Observações'];
+    csvContent += headers.join(',') + '\n';
+    
+    currentStudents.forEach(student => {
+      const tests = filterTestsByPeriod(student.tests, options.period).filter(hasValidMetrics);
+      const age = calculateAge(student.birth_date);
+      
+      if (tests.length > 0) {
+        tests.forEach(test => {
+          const row = [
+            `"${student.name}"`,
+            age ?? 'N/A',
+            formatGender(student.gender),
+            new Date(test.test_date).toLocaleDateString('pt-BR'),
+            test.cooper_test_distance ?? '',
+            test.vo2_max ?? '',
+            `"${test.notes || ''}"`
+          ];
+          csvContent += row.join(',') + '\n';
+        });
+      } else {
+        const row = [
+          `"${student.name}"`,
+          age ?? 'N/A',
+          formatGender(student.gender),
+          '', '', '',
+        ];
+        csvContent += row.join(',') + '\n';
+      }
+    });
+    
+    // Download do arquivo CSV
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `relatorio_performance_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleGenerateReport = async () => {
     setLoading(true);
     
     try {
-      await loadStudents();
-      
+      const currentStudents = await loadStudents();
       switch (options.type) {
         case 'individual':
           if (selectedStudent) {
@@ -376,10 +599,18 @@ export default function ReportExporter() {
           }
           break;
         case 'group':
-          await generateGroupReport();
+          if (currentStudents.length === 0) {
+            console.warn('Nenhum aluno encontrado para gerar o relatório.');
+          } else {
+            await generateGroupReport();
+          }
           break;
         case 'comparison':
-          await generateComparisonReport();
+          if (currentStudents.length === 0) {
+            console.warn('Nenhum aluno encontrado para gerar o relatório.');
+          } else {
+            await generateComparisonReport();
+          }
           break;
       }
     } catch (error) {
@@ -514,6 +745,22 @@ export default function ReportExporter() {
             </div>
           )}
         </div>
+
+        {/* Opções extras */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <label className="inline-flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={options.includePerf} onChange={(e) => setOptions({ ...options, includePerf: e.target.checked })} />
+            Incluir Testes de Performance
+          </label>
+          <label className="inline-flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={options.includePresc} onChange={(e) => setOptions({ ...options, includePresc: e.target.checked })} />
+            Incluir Prescrições de Treino
+          </label>
+          <label className="inline-flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={options.format === 'detailed'} onChange={(e) => setOptions({ ...options, format: e.target.checked ? 'detailed' : 'summary' })} />
+            Detalhar por aluno
+          </label>
+        </div>
         
         {/* Prévia do Relatório */}
         <div className="border rounded-lg p-4 bg-gray-50">
@@ -521,7 +768,7 @@ export default function ReportExporter() {
           <div className="space-y-2 text-sm text-gray-600">
             <div className="flex items-center space-x-2">
               <Badge variant="outline">{options.type === 'individual' ? 'Individual' : options.type === 'group' ? 'Geral' : 'Comparativo'}</Badge>
-              <Badge variant="outline">{getPeriodLabel(options.period)}</Badge>
+              <Badge variant="outline">{formatters.getPeriodLabel(options.period)}</Badge>
               <Badge variant="outline">{options.format === 'summary' ? 'Resumido' : 'Detalhado'}</Badge>
             </div>
             
@@ -533,24 +780,38 @@ export default function ReportExporter() {
           </div>
         </div>
         
-        {/* Botão de Gerar */}
-        <Button 
-          onClick={handleGenerateReport} 
-          disabled={loading || (options.type === 'individual' && !selectedStudent)}
-          className="w-full"
-        >
-          {loading ? (
+        {/* Botões de Exportação */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Button 
+            onClick={handleGenerateReport} 
+            disabled={loading || (options.type === 'individual' && !selectedStudent)}
+            className="w-full"
+          >
+            {loading ? (
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Gerando...</span>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Download className="h-4 w-4" />
+                <span>Gerar PDF</span>
+              </div>
+            )}
+          </Button>
+          
+          <Button 
+            onClick={generateCSVReport} 
+            disabled={loading}
+            variant="outline"
+            className="w-full"
+          >
             <div className="flex items-center space-x-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              <span>Gerando relatório...</span>
+              <FileText className="h-4 w-4" />
+              <span>Exportar CSV</span>
             </div>
-          ) : (
-            <div className="flex items-center space-x-2">
-              <Download className="h-4 w-4" />
-              <span>Gerar Relatório PDF</span>
-            </div>
-          )}
-        </Button>
+          </Button>
+        </div>
       </div>
     </div>
   );

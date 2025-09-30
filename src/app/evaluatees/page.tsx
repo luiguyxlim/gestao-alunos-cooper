@@ -3,7 +3,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import ResponsiveNavigation from '@/components/ResponsiveNavigation'
-import StudentCard from '@/components/StudentCard'
+import StudentListItem from '@/components/StudentListItem'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -35,48 +35,66 @@ export default async function EvaluateesPage() {
     <div className="min-h-screen bg-gray-50">
       <ResponsiveNavigation user={user} />
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">Avaliandos</h1>
-            <Link
-              href="/evaluatees/new"
-              className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Novo Avaliando
-            </Link>
-          </div>
-
-          {students.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="mx-auto h-12 w-12 text-gray-400">
-                <svg
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
-                  />
-                </svg>
+      <main className="max-w-7xl mx-auto py-4 px-3 sm:py-6 sm:px-6 lg:px-8">
+        <div className="px-0 py-4 sm:py-6 sm:px-0">
+        {/* Header melhorado */}
+        <div className="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden mb-6">
+          <div className="px-4 py-5 sm:p-6 lg:p-8">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+              <div>
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">Avaliandos</h1>
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
+                  Gerencie e acompanhe o progresso de todos os seus avaliandos
+                </p>
+                <div className="mt-2 text-sm text-gray-500">
+                  {students.length} avaliando{students.length !== 1 ? 's' : ''} cadastrado{students.length !== 1 ? 's' : ''}
+                </div>
               </div>
-              <h3 className="mt-2 text-sm font-medium text-gray-900">
-                Nenhum avaliando cadastrado
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Comece adicionando seu primeiro avaliando.
-              </p>
-              <div className="mt-6">
+              <div className="flex-shrink-0">
                 <Link
                   href="/evaluatees/new"
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl text-sm sm:text-base font-medium hover:from-indigo-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Novo Avaliando
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+          {students.length === 0 ? (
+            <div className="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-4 py-12 sm:px-6 text-center">
+                <div className="mx-auto h-16 w-16 text-gray-400 mb-4">
+                  <svg
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                  Nenhum avaliando cadastrado
+                </h3>
+                <p className="text-sm sm:text-base text-gray-600 mb-6 max-w-md mx-auto">
+                  Comece adicionando seu primeiro avaliando para começar a realizar testes de performance.
+                </p>
+                <Link
+                  href="/evaluatees/new"
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl text-sm sm:text-base font-medium hover:from-indigo-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
                   <svg
-                    className="-ml-1 mr-2 h-5 w-5"
+                    className="w-4 h-4 sm:w-5 sm:h-5 mr-2"
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 20 20"
                     fill="currentColor"
@@ -93,11 +111,11 @@ export default async function EvaluateesPage() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {students.map((student) => (
-                <StudentCard key={student.id} student={student} />
-              ))}
-            </div>
+          <div className="space-y-3">
+            {students.map((student) => (
+              <StudentListItem key={student.id} student={student} />
+            ))}
+          </div>
           )}
         </div>
       </main>

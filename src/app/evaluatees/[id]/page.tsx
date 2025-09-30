@@ -174,6 +174,17 @@ export default async function EvaluateePage({ params }: EvaluateePageProps) {
                   </div>
                   
                   <div>
+                    <dt className="text-sm font-medium text-gray-500">Peso Corporal</dt>
+                    <dd className="mt-1 text-sm text-gray-900">
+                      {student.weight ? (
+                        `${student.weight} kg`
+                      ) : (
+                        'Não informado'
+                      )}
+                    </dd>
+                  </div>
+                  
+                  <div>
                     <dt className="text-sm font-medium text-gray-500">Endereço</dt>
                     <dd className="mt-1 text-sm text-gray-900">
                       {student.address || 'Não informado'}

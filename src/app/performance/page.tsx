@@ -6,13 +6,11 @@ import {
   getGlobalPerformanceStats,
   getAgeGroupPerformanceStats,
   formatters,
-  metricColors
+  metricColors,
+  generatePerformanceInsights
 } from '@/lib/performance-utils'
-import type {
-  PerformanceGlobalStats,
-  PerformanceAgeGroupStats,
-  PerformanceInsight
-} from '@/lib/supabase'
+import type { PerformanceGlobalStats, PerformanceAgeGroupStats } from '@/lib/supabase'
+import type { PerformanceInsight, PerformanceMetrics } from '@/lib/performance-utils'
 // Card components removed - using custom div styling
 // Removed unused import: Badge
 import { Button } from '@/components/ui/button'
@@ -232,28 +230,27 @@ export default function PerformancePage() {
       setGlobalStats(globalData)
       setAgeGroupStats(ageGroupData)
 
-      // Gerar insights
+      // Gerar insights básicos a partir das estatísticas globais
       if (globalData) {
-        // Insights temporariamente desabilitados devido a incompatibilidade de tipos
-        // const ageGroupDataFormatted: AgeGroupData[] = ageGroupData.map(ag => ({
-        //   ageGroup: ag.age_group as string,
-        //   stats: ag
-        // }))
+        const metrics: PerformanceMetrics = {
+          totalEvaluations: globalData.total_evaluations || 0,
+          totalStudents: globalData.total_students || 0,
+          avgVo2Max: Number(globalData.global_avg_vo2_max || 0),
+          avgCooperDistance: Number(globalData.global_avg_cooper_distance || 0),
+          avgBodyFatPercentage: Number(globalData.global_avg_body_fat_percentage || 0),
+          avgMuscleMass: Number(globalData.global_avg_muscle_mass || 0),
+          vo2MaxP25: 0,
+          vo2MaxP50: 0,
+          vo2MaxP75: 0,
+          vo2MaxP90: 0,
+          cooperDistanceP25: 0,
+          cooperDistanceP50: 0,
+          cooperDistanceP75: 0,
+          cooperDistanceP90: 0
+        }
 
-        // const globalMetrics = {
-        //   vo2Max: globalData.global_avg_vo2_max,
-        //   cooperDistance: globalData.global_avg_cooper_distance,
-        //   bodyFatPercentage: globalData.global_avg_body_fat_percentage,
-        //   muscleMass: globalData.global_avg_muscle_mass,
-        //   restingHeartRate: null
-        // }
-
-        // const generatedInsights = generatePerformanceInsights(
-        //   globalMetrics,
-        //   ageGroupDataFormatted
-        // )
-        // setInsights(generatedInsights)
-        setInsights([])
+        const generated = generatePerformanceInsights(metrics, [])
+        setInsights(generated)
       }
     } catch (error) {
       console.error('Erro ao carregar dados de performance:', error)
@@ -541,11 +538,18 @@ export default function PerformancePage() {
 
         <TabsContent value="charts" className="p-8">
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-            <div className="flex items-center mb-6">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mr-3">
-                <BarChart3 className="w-5 h-5 text-white" />
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mr-3">
+                  <BarChart3 className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">Visualizações Interativas</h3>
               </div>
-              <h3 className="text-xl font-bold text-gray-900">Visualizações Interativas</h3>
+              {ageGroupStats.length === 0 && (
+                <div className="text-sm text-gray-500 bg-blue-50 px-3 py-2 rounded-lg">
+                  <span className="font-medium">💡 Dica:</span> Adicione mais avaliações para visualizar os gráficos
+                </div>
+              )}
             </div>
             <PerformanceCharts ageGroupStats={ageGroupStats} />
           </div>
@@ -617,11 +621,16 @@ export default function PerformancePage() {
 
         <TabsContent value="reports" className="p-8">
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-            <div className="flex items-center mb-6">
-              <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full flex items-center justify-center mr-3">
-                <Download className="w-5 h-5 text-white" />
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full flex items-center justify-center mr-3">
+                  <Download className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">Exportação de Relatórios</h3>
               </div>
-              <h3 className="text-xl font-bold text-gray-900">Exportação de Relatórios</h3>
+              <div className="text-sm text-gray-500 bg-green-50 px-3 py-2 rounded-lg">
+                <span className="font-medium">✨ Novo:</span> Exportação em CSV disponível
+              </div>
             </div>
             <ReportExporter />
           </div>
