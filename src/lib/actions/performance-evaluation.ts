@@ -272,4 +272,5 @@ export async function deletePerformanceEvaluation(id: string) {
   }
 
   revalidatePath('/tests')
+  return { success: true }
 }

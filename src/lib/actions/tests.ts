@@ -228,7 +228,6 @@ export async function updateCooperTest(formData: FormData) {
 export async function deleteTest(formData: FormData | { id: string }) {
   const { supabase, user } = await getAuthenticatedUser()
 
-  // Suportar tanto FormData quanto objeto simples
   let id: string
   if (formData instanceof FormData) {
     id = formData.get('id') as string
@@ -238,7 +237,7 @@ export async function deleteTest(formData: FormData | { id: string }) {
     console.error('🔴 [SERVER ACTION] Tipo de dados inválido:', typeof formData, formData)
     throw new Error('Dados inválidos para exclusão')
   }
-  
+
   if (!id) {
     throw new Error('ID do teste é obrigatório')
   }
@@ -251,11 +250,11 @@ export async function deleteTest(formData: FormData | { id: string }) {
 
   if (error) {
     console.error('🔴 [SERVER ACTION] Erro ao excluir teste:', error)
-    throw new Error('Erro ao excluir teste')
+    throw new Error(`Erro ao excluir teste: ${error.message}`)
   }
 
   revalidatePath('/tests')
-  redirect('/tests')
+  return { success: true }
 }
 
 export async function getTestsByStudent(studentId: string) {
@@ -331,13 +330,13 @@ export async function createPerformanceTest(formData: FormData) {
 
   const studentId = formData.get('student_id') as string
   const testDate = formData.get('test_date') as string
-  const cooperTestId = formData.get('cooper_test_id') as string
   const intensityPercentage = formData.get('intensity_percentage') ? parseFloat(formData.get('intensity_percentage') as string) : null
   const trainingTime = formData.get('training_time') ? parseFloat(formData.get('training_time') as string) : null
   const notes = formData.get('notes') as string
 
   // Dados calculados da prescrição
   const vo2Max = formData.get('vo2_max') ? parseFloat(formData.get('vo2_max') as string) : null
+  const cooperDistance = formData.get('cooper_distance') ? parseFloat(formData.get('cooper_distance') as string) : null
   const trainingIntensity = formData.get('training_intensity') ? parseFloat(formData.get('training_intensity') as string) : null
   const trainingVelocity = formData.get('training_velocity') ? parseFloat(formData.get('training_velocity') as string) : null
   const trainingDistance = formData.get('training_distance') ? parseFloat(formData.get('training_distance') as string) : null
@@ -346,14 +345,14 @@ export async function createPerformanceTest(formData: FormData) {
   const weightLoss = formData.get('weight_loss') ? parseFloat(formData.get('weight_loss') as string) : null
   const bodyWeight = formData.get('body_weight') ? parseFloat(formData.get('body_weight') as string) : null
 
-  if (!studentId || !testDate || !cooperTestId) {
+  if (!studentId || !testDate || cooperDistance === null || Number.isNaN(cooperDistance)) {
     throw new Error('Campos obrigatórios não preenchidos')
   }
 
   console.log('Creating performance test with data:', {
     studentId,
     testDate,
-    cooperTestId,
+    cooperDistance,
     vo2Max,
     intensityPercentage,
     trainingTime
@@ -371,6 +370,7 @@ export async function createPerformanceTest(formData: FormData) {
       intensity_percentage: intensityPercentage,
       training_time: trainingTime,
       body_weight: bodyWeight,
+      cooper_test_distance: cooperDistance,
       training_distance: trainingDistance,
       training_intensity: trainingIntensity,
       training_velocity: trainingVelocity,

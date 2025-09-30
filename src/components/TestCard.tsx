@@ -1,11 +1,13 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { deleteTest } from '@/lib/actions/tests'
 import { useState, memo } from 'react'
 import TouchInteractions, { useHapticFeedback } from './TouchInteractions'
 
 import ConfirmModal from './ConfirmModal'
+import { formatDateToBR } from '@/lib/utils'
 
 interface TestCardProps {
   test: {
@@ -32,12 +34,11 @@ interface TestCardProps {
 }
 
 function TestCard({ test }: TestCardProps) {
+  const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const triggerHaptic = useHapticFeedback()
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR')
-  }
+  const formatDate = (dateString: string) => formatDateToBR(dateString)
 
   const getTestTypeLabel = (type: string) => {
     const types: { [key: string]: string } = {
@@ -121,7 +122,8 @@ function TestCard({ test }: TestCardProps) {
       await deleteTest(formData)
       triggerHaptic('light')
       setShowDeleteModal(false)
-      // A Server Action já faz redirect, não precisamos recarregar
+      setIsDeleting(false)
+      setTimeout(() => router.refresh(), 100)
     } catch (error) {
       console.error('🔴 [TestCard] Erro ao excluir teste:', error)
       alert('Erro ao excluir teste')

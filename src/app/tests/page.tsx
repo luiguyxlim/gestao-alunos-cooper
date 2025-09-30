@@ -2,7 +2,7 @@ import { getTests } from '@/lib/actions/tests'
 import { getAuthenticatedUser } from '@/lib/supabase-server'
 import Link from 'next/link'
 import ResponsiveNavigation from '@/components/ResponsiveNavigation'
-import TestListItem from '@/components/TestListItem'
+import TestsList from '@/components/TestsList'
 import TestsStats from '@/components/TestsStats'
 import type { Metadata } from 'next'
 import type { PerformanceTestDetail } from '@/lib/types'
@@ -46,16 +46,16 @@ export default async function TestsPage({ searchParams }: TestsPageProps) {
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
               <div>
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
-                  {resolvedSearchParams.evaluatee_id ? 'Testes do Avaliando' : 'Testes de Performance'}
+                  {resolvedSearchParams.evaluatee_id ? 'Teste do Avaliando' : 'Novo Teste'}
                 </h1>
                 <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                   {resolvedSearchParams.evaluatee_id
-                    ? 'Histórico completo de avaliações do avaliando selecionado'
-                    : 'Gerencie e visualize todos os testes de performance física'
+                    ? 'Visualize o resultado selecionado do avaliando'
+                    : 'Cadastre e gerencie seus testes de performance física'
                   }
                 </p>
                 <div className="mt-2 text-sm text-gray-500">
-                  {tests.length} teste{tests.length !== 1 ? 's' : ''} realizado{tests.length !== 1 ? 's' : ''}
+                  {tests.length} teste{tests.length !== 1 ? 's' : ''} registrado{tests.length !== 1 ? 's' : ''}
                 </div>
               </div>
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -128,11 +128,7 @@ export default async function TestsPage({ searchParams }: TestsPageProps) {
               </div>
             </div>
           ) : (
-          <div className="space-y-3">
-            {tests.map((test) => (
-              <TestListItem key={test.id} test={test} />
-            ))}
-          </div>
+            <TestsList tests={tests} />
           )}
         </div>
       </main>

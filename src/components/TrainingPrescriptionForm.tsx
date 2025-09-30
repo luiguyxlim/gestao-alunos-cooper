@@ -136,7 +136,14 @@ export default function TrainingPrescriptionForm({ students, selectedStudentId }
       const formData = new FormData()
       formData.append('student_id', selectedStudent)
       formData.append('test_date', new Date().toISOString().split('T')[0])
-      formData.append('cooper_test_id', selectedCooperTest)
+
+      const selectedTest = cooperTests.find((test) => test.id === selectedCooperTest)
+      if (!selectedTest) {
+        throw new Error('Teste de Cooper selecionado não encontrado')
+      }
+
+      formData.append('cooper_distance', selectedTest.cooper_test_distance.toString())
+      formData.append('vo2_max', selectedTest.vo2_max.toString())
       formData.append('intensity_percentage', intensityPercentage)
       formData.append('training_time', trainingTime)
       formData.append('notes', `Prescrição de treinamento baseada no teste de Cooper`)

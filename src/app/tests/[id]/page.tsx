@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
+import { formatDateToBR } from '@/lib/utils'
 
 interface Test {
   id: string
@@ -31,9 +32,7 @@ interface Student {
   name: string
 }
 
-function formatDate(dateString: string) {
-  return new Date(dateString).toLocaleDateString('pt-BR')
-}
+const formatDate = (dateString: string) => formatDateToBR(dateString)
 
 function getTestTypeLabel(testType: string) {
   const types: { [key: string]: string } = {

@@ -1,4 +1,5 @@
 import { getTestsStats } from '@/lib/actions/tests'
+import { formatDateToBR } from '@/lib/utils'
 
 export default async function TestsStats() {
   const stats = await getTestsStats()
@@ -84,7 +85,7 @@ export default async function TestsStats() {
           <h3 className="text-md font-medium text-gray-900 mb-3">Último Teste</h3>
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600">
-              Data: {new Date(stats.lastTest.test_date).toLocaleDateString('pt-BR')}
+              Data: {formatDateToBR(stats.lastTest.test_date) || 'Não informado'}
             </p>
             <p className="text-sm text-gray-600">
               Tipo: {stats.lastTest.test_type}

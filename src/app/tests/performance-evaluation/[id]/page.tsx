@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/lib/supabase-server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import ResponsiveNavigation from '@/components/ResponsiveNavigation'
+import { formatDateToBR, formatNumber } from '@/lib/utils'
 
 interface PerformanceEvaluationPageProps {
   params: {
@@ -20,14 +21,9 @@ export default async function PerformanceEvaluationPage({ params }: PerformanceE
     notFound()
   }
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'Não informado'
-    return new Date(dateString).toLocaleDateString('pt-BR')
-  }
-
-  const formatNumber = (value: number | null, decimals: number = 2) => {
-    if (value === null || value === undefined) return 'N/A'
-    return value.toFixed(decimals)
+  const formatDate = (dateString: string | null | undefined) => {
+    const formatted = formatDateToBR(dateString || undefined)
+    return formatted || 'Não informado'
   }
 
   return (

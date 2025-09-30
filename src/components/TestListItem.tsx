@@ -1,24 +1,25 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { deleteTest } from '@/lib/actions/tests'
 import { PerformanceTestDetail } from '@/lib/types'
 import { useState, memo } from 'react'
 import TouchInteractions, { useHapticFeedback } from './TouchInteractions'
 import ConfirmModal from './ConfirmModal'
+import { formatDateToBR } from '@/lib/utils'
 
 interface TestListItemProps {
   test: PerformanceTestDetail
 }
 
 function TestListItem({ test }: TestListItemProps) {
+  const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const triggerHaptic = useHapticFeedback()
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR')
-  }
+  const formatDate = (dateString: string) => formatDateToBR(dateString)
 
   const getTestTypeLabel = (type: string) => {
     const types: { [key: string]: string } = {
@@ -95,6 +96,7 @@ function TestListItem({ test }: TestListItemProps) {
       await deleteTest(formData)
       triggerHaptic('light')
       setShowDeleteModal(false)
+      setTimeout(() => router.refresh(), 100)
     } catch (error) {
       console.error('Erro ao excluir teste:', error)
       alert('Erro ao excluir teste')
