@@ -122,6 +122,24 @@ export interface PerformanceTestDetail {
   } | null
 }
 
+export interface UpdateCooperTestFormData {
+  id: string
+  student_id: string
+  test_date: string
+  cooper_distance: number
+  vo2_max?: number | null
+  notes?: string | null
+}
+
+export interface UpdateCooperTestFormData {
+  id: string
+  student_id: string
+  test_date: string
+  cooper_distance: number
+  vo2_max?: number | null
+  notes?: string | null
+}
+
 // Novo tipo de teste: Avaliação de Desempenho
 export interface PerformanceEvaluationTest {
   id: string

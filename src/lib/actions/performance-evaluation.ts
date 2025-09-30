@@ -2,6 +2,7 @@
 
 import { getAuthenticatedUser } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { 
   CreatePerformanceEvaluationData, 
   UpdatePerformanceEvaluationData,
@@ -225,6 +226,32 @@ export async function updatePerformanceEvaluation(id: string, data: UpdatePerfor
     console.error('Erro ao atualizar avaliação de desempenho:', error)
     throw error
   }
+}
+
+export async function updatePerformanceEvaluationAction(formData: FormData) {
+  const id = formData.get('id') as string
+  const studentId = formData.get('student_id') as string
+  const testDate = formData.get('test_date') as string
+  const intensityPercentage = formData.get('intensity_percentage') ? parseFloat(formData.get('intensity_percentage') as string) : 0
+  const trainingTime = formData.get('training_time') ? parseFloat(formData.get('training_time') as string) : 0
+  const bodyWeight = formData.get('body_weight') ? parseFloat(formData.get('body_weight') as string) : 0
+  const cooperDistance = formData.get('cooper_distance') ? parseFloat(formData.get('cooper_distance') as string) : 0
+  const vo2Max = formData.get('vo2_max') ? parseFloat(formData.get('vo2_max') as string) : 0
+  const observations = (formData.get('notes') as string) || undefined
+
+  await updatePerformanceEvaluation(id, {
+    id,
+    student_id: studentId,
+    test_date: testDate,
+    intensity_percentage: intensityPercentage,
+    training_time: trainingTime,
+    body_weight: bodyWeight,
+    cooper_distance: cooperDistance,
+    vo2_max: vo2Max,
+    observations,
+  })
+
+  redirect(`/tests/${id}`)
 }
 
 /**

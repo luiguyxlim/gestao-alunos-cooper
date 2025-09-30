@@ -205,7 +205,7 @@ function TestListItem({ test }: TestListItemProps) {
             </Link>
             
             <Link
-              href={`/tests/${test.id}/edit`}
+              href={test.test_type === 'cooper_vo2' ? `/tests/cooper/${test.id}/edit` : test.test_type === 'performance_evaluation' ? `/tests/performance-evaluation/${test.id}/edit` : `/tests/${test.id}/edit`}
               className="inline-flex items-center px-2 sm:px-3 py-2 text-sm font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors duration-200"
               title="Editar"
             >

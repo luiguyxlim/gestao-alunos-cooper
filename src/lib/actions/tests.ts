@@ -3,7 +3,7 @@
 import { getAuthenticatedUser } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import type { PerformanceTestDetail } from '@/lib/types'
+import type { PerformanceTestDetail, UpdateCooperTestFormData } from '@/lib/types'
 
 export async function getTests(studentId?: string): Promise<PerformanceTestDetail[]> {
   const { supabase, user } = await getAuthenticatedUser()
@@ -177,73 +177,52 @@ export async function createTest(formData: FormData) {
   redirect(`/tests/${data.id}`)
 }
 
-export async function updateTest(formData: FormData) {
+// updateTest deprecated: redirection layer handles editing per type
+
+export async function updateCooperTest(formData: FormData) {
   const { supabase, user } = await getAuthenticatedUser()
 
-  const id = formData.get('id') as string
-  const studentId = formData.get('student_id') as string
-  const testDate = formData.get('test_date') as string
-  const testType = formData.get('test_type') as string
-  const notes = formData.get('notes') as string
-  
-  // Métricas de performance
-  const speed = formData.get('speed') ? parseFloat(formData.get('speed') as string) : null
-  const agility = formData.get('agility') ? parseFloat(formData.get('agility') as string) : null
-  const strength = formData.get('strength') ? parseFloat(formData.get('strength') as string) : null
-  const endurance = formData.get('endurance') ? parseFloat(formData.get('endurance') as string) : null
-  const flexibility = formData.get('flexibility') ? parseFloat(formData.get('flexibility') as string) : null
-  const coordination = formData.get('coordination') ? parseFloat(formData.get('coordination') as string) : null
-  const balance = formData.get('balance') ? parseFloat(formData.get('balance') as string) : null
-  const power = formData.get('power') ? parseFloat(formData.get('power') as string) : null
-  const reaction_time = formData.get('reaction_time') ? parseFloat(formData.get('reaction_time') as string) : null
-  let vo2_max = formData.get('vo2_max') ? parseFloat(formData.get('vo2_max') as string) : null
-  
-  // Dados específicos do teste de Cooper
-  const cooper_distance = formData.get('cooper_distance') ? parseFloat(formData.get('cooper_distance') as string) : null
-  const cooper_age = formData.get('cooper_age') ? parseInt(formData.get('cooper_age') as string) : null
-  const cooper_gender = formData.get('cooper_gender') as string
-  
-  // Se for teste de Cooper, calcular VO2 máximo automaticamente
-  if (testType === 'cooper_vo2' && cooper_distance && cooper_age && cooper_gender) {
-    // Nova fórmula do Cooper: VO2max = (distância em metros - 504,1) / 44,8
-    vo2_max = Math.max(0, Math.round(((cooper_distance - 504.1) / 44.8) * 100) / 100)
+  const data: UpdateCooperTestFormData = {
+    id: formData.get('id') as string,
+    student_id: formData.get('student_id') as string,
+    test_date: formData.get('test_date') as string,
+    cooper_distance: parseFloat(formData.get('cooper_distance') as string),
+    vo2_max: formData.get('vo2_max') ? parseFloat(formData.get('vo2_max') as string) : null,
+    notes: (formData.get('notes') as string) || null,
   }
 
-  if (!id || !studentId || !testDate || !testType) {
+  if (!data.id || !data.student_id || !data.test_date || Number.isNaN(data.cooper_distance)) {
     throw new Error('Campos obrigatórios não preenchidos')
+  }
+
+  let vo2Max = data.vo2_max
+
+  if (!vo2Max && !Number.isNaN(data.cooper_distance)) {
+    vo2Max = Math.max(0, Math.round(((data.cooper_distance - 504.1) / 44.8) * 100) / 100)
   }
 
   const { error } = await supabase
     .from('performance_tests')
     .update({
-      student_id: studentId,
-      test_date: testDate,
-      test_type: testType,
-      notes,
-      speed,
-      agility,
-      strength,
-      endurance,
-      flexibility,
-      coordination,
-      balance,
-      power,
-      reaction_time,
-      vo2_max,
-      cooper_test_distance: cooper_distance
+      student_id: data.student_id,
+      test_date: data.test_date,
+      cooper_test_distance: data.cooper_distance,
+      vo2_max: vo2Max,
+      notes: data.notes,
+      test_type: 'cooper_vo2',
     })
-    .eq('id', id)
+    .eq('id', data.id)
     .eq('user_id', user.id)
 
   if (error) {
-    console.error('Error updating test:', error)
-    throw new Error('Erro ao atualizar teste')
+    console.error('Error updating Cooper test:', error)
+    throw new Error('Erro ao atualizar teste de Cooper')
   }
 
   revalidatePath('/tests')
-  revalidatePath(`/tests/${id}`)
-  revalidatePath(`/evaluatees/${studentId}`)
-  redirect(`/tests/${id}`)
+  revalidatePath(`/tests/${data.id}`)
+  revalidatePath(`/evaluatees/${data.student_id}`)
+  redirect(`/tests/${data.id}`)
 }
 
 export async function deleteTest(formData: FormData | { id: string }) {

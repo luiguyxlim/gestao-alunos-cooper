@@ -166,7 +166,15 @@ export default function TestDetailPage() {
             <div className="flex items-center gap-3">
               <Button
                 size="sm"
-                onClick={() => router.push(`/tests/${test.id}/edit`)}
+                onClick={() => {
+                  if (test.test_type === 'cooper_vo2') {
+                    router.push(`/tests/cooper/${test.id}/edit`)
+                  } else if (test.test_type === 'performance_evaluation') {
+                    router.push(`/tests/performance-evaluation/${test.id}/edit`)
+                  } else {
+                    router.push(`/tests/${test.id}/edit`)
+                  }
+                }}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
               >
                 ✏️ Editar
