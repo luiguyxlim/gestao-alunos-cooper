@@ -8,9 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Download, FileText, Users, TrendingUp } from 'lucide-react';
 import { formatters } from '@/lib/performance-utils';
 import { createClient } from '@/lib/supabase';
-import { fetchStudentsWithTests, type ReportStudent } from '@/lib/reports';
+import { fetchStudentsWithTests, type ReportStudent, type NormalizedTest } from '@/lib/reports';
+import { cooperColumns, prescriptionColumns, intervalColumns, type ColumnMetadata } from '@/lib/report-columns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 interface ReportOptions {
   type: 'individual' | 'group' | 'comparison';
@@ -21,21 +23,8 @@ interface ReportOptions {
   includePresc: boolean;
 }
 
-interface PerformanceTest {
-  id: string;
-  test_date: string;
-  test_type: string | null;
-  cooper_test_distance: number | null;
-  vo2_max: number | null;
-  intensity_percentage: number | null;
-  training_time: number | null;
-  training_distance: number | null;
-  training_velocity: number | null;
-  training_intensity: number | null;
-  total_o2_consumption: number | null;
-  caloric_expenditure: number | null;
-  notes?: string | null;
-}
+// Using NormalizedTest from reports.ts
+type PerformanceTest = NormalizedTest
 
 // number parsing handled in reports util
 
@@ -53,20 +42,8 @@ const formatNumberWithUnit = (value: number | null, unit: string, fractionDigits
   return 'N/A'
 }
 
-const formatMeters = (value: number | null): string => {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    if (value >= 1000) {
-      return `${(value / 1000).toFixed(2)} km`
-    }
-    return `${value.toFixed(0)} m`
-  }
-  return 'N/A'
-}
-
-const formatMlPerKgMin = (value: number | null): string => formatNumberWithUnit(value, 'ml/kg/min', 2)
 const formatMetersPerMinute = (value: number | null): string => formatNumberWithUnit(value, 'm/min', 2)
 const formatLiters = (value: number | null): string => formatNumberWithUnit(value, 'L', 2)
-const formatCalories = (value: number | null): string => formatNumberWithUnit(value, 'kcal', 0)
 
 export default function ReportExporter() {
   const [options, setOptions] = useState<ReportOptions>({
@@ -151,6 +128,142 @@ export default function ReportExporter() {
     return tests.filter(test => new Date(test.test_date) >= cutoffDate);
   };
 
+  // Helper: Get value from test by column key
+  const getColumnValue = (test: PerformanceTest, columnKey: string): unknown => {
+    return (test as unknown as Record<string, unknown>)[columnKey]
+  }
+
+  // Helper: Build table data from tests using column metadata
+  const buildTableData = (tests: PerformanceTest[], columns: ColumnMetadata[]): string[][] => {
+    return tests.map(test => 
+      columns.map(col => {
+        const value = getColumnValue(test, col.key)
+        if (col.formatter) {
+          // Convert unknown to number | string | null for formatter
+          const formattedValue = (typeof value === 'number' || typeof value === 'string' || value === null) ? value : null
+          return col.formatter(formattedValue)
+        }
+        return value?.toString() || 'N/A'
+      })
+    )
+  }
+
+  // Helper: Get table headers from column metadata
+  const getTableHeaders = (columns: ColumnMetadata[]): string[] => {
+    return columns.map(col => col.unit ? `${col.label} (${col.unit})` : col.label)
+  }
+
+  // Geração de XLSX otimizado por áreas (Cooper / Prescrição / Intervalos)
+  const generateXLSXReport = async () => {
+    const currentStudents = students.length > 0 ? students : await loadStudents();
+
+    const wb = XLSX.utils.book_new();
+
+    const dateLabel = new Date().toISOString().split('T')[0];
+
+    const formatDateBR = (value: unknown): string => {
+      if (!value) return 'N/A';
+      if (typeof value === 'string') {
+        const d = new Date(value);
+        return Number.isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString('pt-BR');
+      }
+      return 'N/A';
+    };
+
+    // Helper para anexar planilha
+    const appendSheet = (name: string, headers: string[], rows: (string | number)[][]) => {
+      const data = [headers, ...rows];
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, ws, name);
+    };
+
+    // Planilha Cooper
+    {
+      const headers = ['Nome', 'Idade', 'Gênero', ...getTableHeaders(cooperColumns), 'Observações'];
+      const rows: (string | number)[][] = [];
+      currentStudents.forEach(student => {
+        const tests = filterTestsByPeriod(student.tests, options.period);
+        const cooperTests = tests.filter(t => (t.test_type || '').toLowerCase().includes('cooper'));
+        const age = calculateAge(student.birth_date);
+
+        cooperTests.forEach(test => {
+          const base = [
+            student.name,
+            typeof age === 'number' ? age : 'N/A',
+            formatGender(student.gender),
+            ...cooperColumns.map(col => {
+              const v = getColumnValue(test, col.key);
+              const fv = (typeof v === 'number' || typeof v === 'string' || v === null) ? v : null;
+              return col.formatter ? col.formatter(fv) : (v?.toString() || '');
+            }),
+            test.notes ? String(test.notes) : ''
+          ];
+          rows.push(base as (string | number)[]);
+        });
+      });
+      appendSheet('Cooper', headers, rows);
+    }
+
+    // Planilha Prescrição
+    {
+      const headers = ['Nome', 'Idade', 'Gênero', ...getTableHeaders(prescriptionColumns), 'Observações'];
+      const rows: (string | number)[][] = [];
+      currentStudents.forEach(student => {
+        const tests = filterTestsByPeriod(student.tests, options.period);
+        const prescTests = tests.filter(t => (t.test_type || '').toLowerCase().includes('performance'));
+        const age = calculateAge(student.birth_date);
+
+        prescTests.forEach(test => {
+          const base = [
+            student.name,
+            typeof age === 'number' ? age : 'N/A',
+            formatGender(student.gender),
+            ...prescriptionColumns.map(col => {
+              const v = getColumnValue(test, col.key);
+              const fv = (typeof v === 'number' || typeof v === 'string' || v === null) ? v : null;
+              return col.formatter ? col.formatter(fv) : (v?.toString() || '');
+            }),
+            test.notes ? String(test.notes) : ''
+          ];
+          rows.push(base as (string | number)[]);
+        });
+      });
+      appendSheet('Prescrição', headers, rows);
+    }
+
+    // Planilha Intervalos (detalhe por intervalo)
+    {
+      const headers = ['Nome', 'Idade', 'Gênero', 'Data', ...getTableHeaders(intervalColumns)];
+      const rows: (string | number)[][] = [];
+      currentStudents.forEach(student => {
+        const tests = filterTestsByPeriod(student.tests, options.period);
+        const intervalTests = tests.filter(t => (t.test_type || '').toLowerCase().includes('interval'));
+        const age = calculateAge(student.birth_date);
+
+        intervalTests.forEach(test => {
+          (test.intervals || []).forEach(intv => {
+            const row = [
+              student.name,
+              typeof age === 'number' ? age : 'N/A',
+              formatGender(student.gender),
+              formatDateBR(test.test_date),
+              ...intervalColumns.map(col => {
+                const raw = (intv as unknown as Record<string, unknown>)[col.key];
+                const fv = (typeof raw === 'number' || typeof raw === 'string' || raw === null) ? raw : null;
+                return col.formatter ? col.formatter(fv) : (raw?.toString() || '');
+              })
+            ];
+            rows.push(row as (string | number)[]);
+          });
+        });
+      });
+      appendSheet('Intervalos', headers, rows);
+    }
+
+    // Salvar arquivo
+    XLSX.writeFile(wb, `relatorio_performance_${dateLabel}.xlsx`);
+  };
+
   const generateIndividualReport = async (studentId: string) => {
     const currentStudents = students.length > 0 ? students : await loadStudents();
     const student = currentStudents.find(s => s.id === studentId);
@@ -229,17 +342,19 @@ export default function ReportExporter() {
       currentY = ((pdf as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? currentY) + 10;
 
       if (options.format === 'detailed') {
-        const performanceTableData = performanceTests.map(test => [
-          new Date(test.test_date).toLocaleDateString('pt-BR'),
-          formatDistance(test.cooper_test_distance),
-          formatVo2(test.vo2_max),
-          test.notes || '-'
-        ]);
+        const performanceTableData = buildTableData(performanceTests, cooperColumns)
+        
+        // Add notes column manually since it's not in cooperColumns metadata
+        const tableDataWithNotes = performanceTableData.map((row, idx) => [
+          ...row,
+          performanceTests[idx].notes || '-'
+        ])
+        const headers = [...getTableHeaders(cooperColumns), 'Observações']
 
         autoTable(pdf, {
           startY: currentY,
-          head: [['Data', 'Distância Cooper', 'VO₂ Máximo', 'Observações']],
-          body: performanceTableData,
+          head: [headers],
+          body: tableDataWithNotes,
           theme: 'striped',
           headStyles: { fillColor: [29, 78, 216], textColor: 255 },
           styles: { font: 'helvetica', fontSize: 10, cellPadding: 3 },
@@ -259,17 +374,23 @@ export default function ReportExporter() {
 
       const latestPrescription = prescriptionTests[prescriptionTests.length - 1];
 
+      // Build summary using prescription columns metadata
       const prescriptionSummary = [
         ['Última prescrição', new Date(latestPrescription.test_date).toLocaleDateString('pt-BR')],
-        ['VO₂ Máximo base', formatVo2(latestPrescription.vo2_max)],
-        ['Gasto de Oxigênio', formatMlPerKgMin(latestPrescription.training_intensity)],
-        ['Velocidade prescrita', formatMetersPerMinute(latestPrescription.training_velocity)],
-        ['Distância prescrita', formatMeters(latestPrescription.training_distance)],
-        ['Tempo de treino', formatNumberWithUnit(latestPrescription.training_time, 'min', 0)],
-        ['Intensidade', formatPercentageValue(latestPrescription.intensity_percentage)],
-        ['Consumo total de O₂', formatLiters(latestPrescription.total_o2_consumption)],
-        ['Gasto calórico estimado', formatCalories(latestPrescription.caloric_expenditure)]
-      ];
+        ['VO₂ Máximo base', formatVo2(latestPrescription.vo2_max)]
+      ]
+      
+      // Add key prescription columns to summary
+      prescriptionColumns.forEach(col => {
+        if (col.key === 'test_date') return // Already added
+        const value = getColumnValue(latestPrescription, col.key)
+        if (value !== null && value !== undefined) {
+          const label = col.unit ? `${col.label} (${col.unit})` : col.label
+          const formattedValue = (typeof value === 'number' || typeof value === 'string' || value === null) ? value : null
+          const formatted = col.formatter ? col.formatter(formattedValue) : String(value)
+          prescriptionSummary.push([label, formatted])
+        }
+      })
 
       autoTable(pdf, {
         startY: currentY,
@@ -284,27 +405,103 @@ export default function ReportExporter() {
       currentY = ((pdf as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? currentY) + 10;
 
       if (options.format === 'detailed') {
-        const prescriptionRows = prescriptionTests.map(test => [
-          new Date(test.test_date).toLocaleDateString('pt-BR'),
-          formatPercentageValue(test.intensity_percentage),
-          formatNumberWithUnit(test.training_time, 'min', 0),
-          formatMeters(test.training_distance),
-          formatMetersPerMinute(test.training_velocity),
-          formatMlPerKgMin(test.training_intensity),
-          formatLiters(test.total_o2_consumption),
-          formatCalories(test.caloric_expenditure),
-          test.notes || '-'
-        ]);
+        const prescriptionTableData = buildTableData(prescriptionTests, prescriptionColumns)
+        
+        // Add notes column manually since it's not in prescriptionColumns metadata
+        const tableDataWithNotes = prescriptionTableData.map((row, idx) => [
+          ...row,
+          prescriptionTests[idx].notes || '-'
+        ])
+        const headers = [...getTableHeaders(prescriptionColumns), 'Observações']
 
         autoTable(pdf, {
           startY: currentY,
-          head: [['Data', '% Intensidade', 'Tempo', 'Distância', 'Velocidade', 'Gasto O₂', 'Consumo O₂', 'Gasto Calórico', 'Observações']],
-          body: prescriptionRows,
+          head: [headers],
+          body: tableDataWithNotes,
           theme: 'striped',
           headStyles: { fillColor: [99, 102, 241], textColor: 255 },
           styles: { font: 'helvetica', fontSize: 9, cellPadding: 3 },
           alternateRowStyles: { fillColor: [240, 245, 255] }
         });
+      }
+    }
+
+    // Treino Intervalado
+    const intervalTests = filteredTests.filter(test => {
+      const type = (test.test_type || '').toLowerCase();
+      return type.includes('interval');
+    })
+
+    if (options.includePresc && intervalTests.length > 0) {
+      pdf.setFontSize(18);
+      pdf.setTextColor(16, 185, 129);
+      pdf.text('Treino Intervalado', 20, currentY);
+      pdf.setTextColor(0, 0, 0);
+      currentY += 10;
+
+      const latestInterval = intervalTests[intervalTests.length - 1];
+
+      const intervalSummary: string[][] = [
+        ['Último treino intervalado', new Date(latestInterval.test_date).toLocaleDateString('pt-BR')],
+        ['VO₂ Máximo base', formatVo2(latestInterval.vo2_max)]
+      ];
+
+      // Reutiliza colunas de prescrição para exibir o resumo agregado do treino intervalado
+      prescriptionColumns.forEach(col => {
+        if (col.key === 'test_date') return;
+        const value = getColumnValue(latestInterval, col.key);
+        if (value !== null && value !== undefined) {
+          const label = col.unit ? `${col.label} (${col.unit})` : col.label;
+          const formattedValue = (typeof value === 'number' || typeof value === 'string' || value === null) ? value : null;
+          const formatted = col.formatter ? col.formatter(formattedValue) : String(value);
+          intervalSummary.push([label, formatted]);
+        }
+      })
+
+      autoTable(pdf, {
+        startY: currentY,
+        head: [['Indicador', 'Valor']],
+        body: intervalSummary,
+        theme: 'striped',
+        headStyles: { fillColor: [16, 185, 129], textColor: 255 },
+        styles: { font: 'helvetica', fontSize: 11, cellPadding: 3 },
+        alternateRowStyles: { fillColor: [236, 253, 245] }
+      });
+
+      currentY = ((pdf as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? currentY) + 10;
+
+      if (options.format === 'detailed') {
+        // Tabela detalhada de intervalos (agregando todos os testes do período)
+        const headers = ['Data', ...getTableHeaders(intervalColumns)];
+        const body: string[][] = [];
+
+        intervalTests.forEach(test => {
+          const dateLabel = new Date(test.test_date).toLocaleDateString('pt-BR');
+          const rows = (test.intervals || []).map(intv => {
+            const values = intervalColumns.map(col => {
+              const raw = (intv as unknown as Record<string, unknown>)[col.key];
+              if (col.formatter) {
+                const fv = (typeof raw === 'number' || typeof raw === 'string' || raw === null) ? raw : null;
+                return col.formatter(fv);
+              }
+              return raw?.toString() || 'N/A';
+            });
+            return [dateLabel, ...values];
+          })
+          body.push(...rows);
+        })
+
+        autoTable(pdf, {
+          startY: currentY,
+          head: [headers],
+          body,
+          theme: 'striped',
+          headStyles: { fillColor: [5, 150, 105], textColor: 255 },
+          styles: { font: 'helvetica', fontSize: 9, cellPadding: 3 },
+          alternateRowStyles: { fillColor: [240, 253, 244] }
+        });
+
+        currentY = ((pdf as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? currentY) + 15;
       }
     }
 
@@ -420,6 +617,33 @@ export default function ReportExporter() {
         styles: { fontSize: 9, cellPadding: 3 },
         alternateRowStyles: { fillColor: [245, 243, 255] }
       })
+
+      // Seção separada para Treino Intervalado
+      const afterPrescY = (((pdf as unknown) as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? afterPerfY) + 12
+
+      const intervalRows = studentsWithTests.map(student => {
+        const tests = filterTestsByPeriod(student.tests, options.period)
+        const intervals = tests.filter(t => isIntervalTest(t))
+        const last = intervals[intervals.length - 1]
+        return [
+          student.name,
+          last ? new Date(last.test_date).toLocaleDateString('pt-BR') : '—',
+          last ? formatPercentageValue(last.intensity_percentage) : 'N/A',
+          last ? formatNumberWithUnit(last.training_time, 'min', 0) : 'N/A',
+          last ? formatMetersPerMinute(last.training_velocity) : 'N/A',
+          last ? formatLiters(last.total_o2_consumption) : 'N/A'
+        ]
+      })
+
+      autoTable(pdf, {
+        startY: afterPrescY,
+        head: [['Aluno', 'Último Treino', '% Int', 'Tempo', 'Velocidade', 'Consumo O₂']],
+        body: intervalRows,
+        theme: 'striped',
+        headStyles: { fillColor: [16, 185, 129], textColor: 255 },
+        styles: { fontSize: 9, cellPadding: 3 },
+        alternateRowStyles: { fillColor: [236, 253, 245] }
+      })
     }
 
     pdf.save(`relatorio_geral_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -439,53 +663,108 @@ export default function ReportExporter() {
     pdf.text(`Período: ${formatters.getPeriodLabel(options.period)}`, 20, 40);
     pdf.text(`Data do relatório: ${new Date().toLocaleDateString('pt-BR')}`, 20, 50);
     
-    // Análise por faixa etária e gênero
-    const groups: { [key: string]: PerformanceTest[] } = {};
-    
+    // Análise por faixa etária e gênero separada por tipo de teste
+    const groups: { [key: string]: { cooper: PerformanceTest[]; prescription: PerformanceTest[]; interval: PerformanceTest[] } } = {};
+
     currentStudents.forEach(student => {
-      const tests = filterTestsByPeriod(student.tests, options.period).filter(hasValidMetrics)
+      const tests = filterTestsByPeriod(student.tests, options.period)
       if (tests.length > 0) {
         const age = calculateAge(student.birth_date)
         const ageGroup = getAgeGroup(age ?? -1)
         const key = `${ageGroup}_${formatGender(student.gender)}`
 
-        if (!groups[key]) groups[key] = []
-        groups[key].push(...tests)
+        if (!groups[key]) groups[key] = { cooper: [], prescription: [], interval: [] }
+        tests.forEach(t => {
+          if (isCooperTest(t)) groups[key].cooper.push(t)
+          if (isPrescriptionTest(t)) groups[key].prescription.push(t)
+          if (isIntervalTest(t)) groups[key].interval.push(t)
+        })
       }
     })
-    
-    const comparisonRows = Object.entries(groups).map(([groupKey, tests]) => {
-      const [ageGroup, gender] = groupKey.split('_');
-      const avgCooper = averageMetric(tests.map(test => test.cooper_test_distance));
-      const avgVO2 = averageMetric(tests.map(test => test.vo2_max));
 
-      const presc = tests.filter(t => (t.test_type || '').toLowerCase().includes('performance'))
-      const avgVel = averageMetric(presc.map(t => t.training_velocity))
-      const avgO2  = averageMetric(presc.map(t => t.total_o2_consumption))
-
+    // Seção Cooper
+    const cooperRows = Object.entries(groups).map(([groupKey, bucket]) => {
+      const [ageGroup, gender] = groupKey.split('_')
+      const avgCooper = averageMetric(bucket.cooper.map(test => test.cooper_test_distance))
+      const avgVO2 = averageMetric(bucket.cooper.map(test => test.vo2_max))
       return [
         `${getAgeGroupLabel(ageGroup)} / ${gender}`,
-        `${tests.length}`,
+        `${bucket.cooper.length}`,
         formatDistance(avgCooper),
-        formatVo2(avgVO2),
-        avgVel !== null ? formatMetersPerMinute(avgVel) : 'N/A',
-        avgO2 !== null ? formatLiters(avgO2) : 'N/A'
-      ];
-    });
+        formatVo2(avgVO2)
+      ]
+    }).filter(row => row[1] !== '0')
 
-    if (comparisonRows.length > 0) {
+    if (cooperRows.length > 0) {
       autoTable(pdf, {
         startY: 70,
-        head: [['Grupo', 'Testes', 'Cooper médio', 'VO₂ médio', 'Velocidade média', 'Consumo O₂ médio']],
-        body: comparisonRows,
+        head: [['Grupo', 'Testes Cooper', 'Cooper médio', 'VO₂ médio']],
+        body: cooperRows,
         theme: 'striped',
-        headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+        headStyles: { fillColor: [37, 99, 235], textColor: 255 },
         styles: { fontSize: 11, cellPadding: 3 },
-        alternateRowStyles: { fillColor: [245, 249, 255] }
-      });
-    } else {
-      pdf.setFontSize(12);
-      pdf.text('Sem dados suficientes para gerar a análise comparativa.', 20, 80);
+        alternateRowStyles: { fillColor: [240, 249, 255] }
+      })
+    }
+
+    let afterCooperY = (((pdf as unknown) as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? 110) + 12
+
+    // Seção Prescrição
+    const prescRows = Object.entries(groups).map(([groupKey, bucket]) => {
+      const [ageGroup, gender] = groupKey.split('_')
+      const avgVel = averageMetric(bucket.prescription.map(t => t.training_velocity))
+      const avgO2 = averageMetric(bucket.prescription.map(t => t.total_o2_consumption))
+      return [
+        `${getAgeGroupLabel(ageGroup)} / ${gender}`,
+        `${bucket.prescription.length}`,
+        avgVel !== null ? formatMetersPerMinute(avgVel) : 'N/A',
+        avgO2 !== null ? formatLiters(avgO2) : 'N/A'
+      ]
+    }).filter(row => row[1] !== '0')
+
+    if (prescRows.length > 0) {
+      autoTable(pdf, {
+        startY: afterCooperY,
+        head: [['Grupo', 'Prescrições', 'Velocidade média', 'Consumo O₂ médio']],
+        body: prescRows,
+        theme: 'striped',
+        headStyles: { fillColor: [124, 58, 237], textColor: 255 },
+        styles: { fontSize: 11, cellPadding: 3 },
+        alternateRowStyles: { fillColor: [245, 243, 255] }
+      })
+      afterCooperY = (((pdf as unknown) as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? afterCooperY) + 12
+    }
+
+    // Seção Intervalado
+    const intervalRows = Object.entries(groups).map(([groupKey, bucket]) => {
+      const [ageGroup, gender] = groupKey.split('_')
+      const avgVel = averageMetric(bucket.interval.map(t => t.training_velocity))
+      const avgTime = averageMetric(bucket.interval.map(t => t.training_time))
+      const avgDist = averageMetric(bucket.interval.map(t => t.training_distance))
+      return [
+        `${getAgeGroupLabel(ageGroup)} / ${gender}`,
+        `${bucket.interval.length}`,
+        avgTime !== null ? formatNumberWithUnit(avgTime, 'min', 0) : 'N/A',
+        avgDist !== null ? formatNumberWithUnit(avgDist, 'm', 0) : 'N/A',
+        avgVel !== null ? formatMetersPerMinute(avgVel) : 'N/A'
+      ]
+    }).filter(row => row[1] !== '0')
+
+    if (intervalRows.length > 0) {
+      autoTable(pdf, {
+        startY: afterCooperY,
+        head: [['Grupo', 'Intervalados', 'Tempo médio', 'Distância média', 'Velocidade média']],
+        body: intervalRows,
+        theme: 'striped',
+        headStyles: { fillColor: [16, 185, 129], textColor: 255 },
+        styles: { fontSize: 11, cellPadding: 3 },
+        alternateRowStyles: { fillColor: [236, 253, 245] }
+      })
+    }
+
+    if (cooperRows.length === 0 && prescRows.length === 0 && intervalRows.length === 0) {
+      pdf.setFontSize(12)
+      pdf.text('Sem dados suficientes para gerar a análise comparativa.', 20, 80)
     }
     
     pdf.save(`relatorio_comparativo_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -509,6 +788,21 @@ export default function ReportExporter() {
   const hasValidMetrics = (test: PerformanceTest): boolean => {
     return (typeof test.cooper_test_distance === 'number' && !Number.isNaN(test.cooper_test_distance)) ||
       (typeof test.vo2_max === 'number' && !Number.isNaN(test.vo2_max))
+  }
+  // Identificação consistente do tipo de teste
+  const normalizeType = (t: string | null): string => (t || '').toLowerCase()
+  const isCooperTest = (test: PerformanceTest): boolean => {
+    const type = normalizeType(test.test_type)
+    return type.includes('cooper') ||
+      (typeof test.cooper_test_distance === 'number' || typeof test.vo2_max === 'number')
+  }
+  const isPrescriptionTest = (test: PerformanceTest): boolean => {
+    const type = normalizeType(test.test_type)
+    return type.includes('performance') || type.includes('prescription')
+  }
+  const isIntervalTest = (test: PerformanceTest): boolean => {
+    const type = normalizeType(test.test_type)
+    return type.includes('interval')
   }
   const averageMetric = (values: Array<number | null>): number | null => {
     const valid = values.filter((value): value is number => typeof value === 'number' && !Number.isNaN(value))
@@ -543,33 +837,112 @@ export default function ReportExporter() {
   const generateCSVReport = async () => {
     const currentStudents = students.length > 0 ? students : await loadStudents();
 
-    let csvContent = '';
-    const headers = ['Nome', 'Idade', 'Gênero', 'Data do Teste', 'Distância Cooper (m)', 'VO2 Máximo (ml/kg/min)', 'Observações'];
-    csvContent += headers.join(',') + '\n';
+    // Build CSV headers from all report columns
+    const headers = ['Nome', 'Idade', 'Gênero', 'Tipo de Teste', 'Seção']
+    const allKeys = new Set<string>()
+    cooperColumns.forEach(col => allKeys.add(col.key))
+    prescriptionColumns.forEach(col => allKeys.add(col.key))
+    intervalColumns.forEach(col => allKeys.add(col.key))
+    
+    // Get unique column labels with units
+    allKeys.forEach(key => {
+      const cooperCol = cooperColumns.find(c => c.key === key)
+      const prescCol = prescriptionColumns.find(c => c.key === key)
+      const intervalCol = intervalColumns.find(c => c.key === key)
+      const col = cooperCol || prescCol || intervalCol
+      if (col) {
+        const label = col.unit ? `${col.label} (${col.unit})` : col.label
+        headers.push(label)
+      }
+    })
+    headers.push('Observações')
+    
+    let csvContent = headers.join(',') + '\n';
     
     currentStudents.forEach(student => {
-      const tests = filterTestsByPeriod(student.tests, options.period).filter(hasValidMetrics);
+      const tests = filterTestsByPeriod(student.tests, options.period);
       const age = calculateAge(student.birth_date);
       
       if (tests.length > 0) {
         tests.forEach(test => {
-          const row = [
+          // Determine test type
+          const testType = (test.test_type || '').toLowerCase();
+          const typeLabel = testType.includes('cooper')
+            ? 'Cooper'
+            : testType.includes('performance')
+            ? 'Prescrição'
+            : testType.includes('interval')
+            ? 'Treino Intervalado'
+            : 'Outro';
+
+          const intervalKeys = new Set(intervalColumns.map(c => c.key));
+
+          // Summary row (test-level data)
+          const baseRow = [
             `"${student.name}"`,
-            age ?? 'N/A',
+            age?.toString() || 'N/A',
             formatGender(student.gender),
-            new Date(test.test_date).toLocaleDateString('pt-BR'),
-            test.cooper_test_distance ?? '',
-            test.vo2_max ?? '',
-            `"${test.notes || ''}"`
+            typeLabel,
+            'Resumo'
           ];
-          csvContent += row.join(',') + '\n';
+
+          allKeys.forEach(key => {
+            const value = getColumnValue(test, key);
+            if (value === null || value === undefined || intervalKeys.has(key)) {
+              baseRow.push('');
+            } else {
+              const cooperCol = cooperColumns.find(c => c.key === key);
+              const prescCol = prescriptionColumns.find(c => c.key === key);
+              const col = cooperCol || prescCol;
+              if (col?.formatter) {
+                const formattedValue = (typeof value === 'number' || typeof value === 'string' || value === null) ? value : null;
+                baseRow.push(col.formatter(formattedValue));
+              } else {
+                baseRow.push(String(value));
+              }
+            }
+          });
+          baseRow.push(`"${test.notes || ''}"`);
+          csvContent += baseRow.join(',') + '\n';
+
+          // Interval rows (if interval training)
+          if (testType.includes('interval')) {
+            (test.intervals || []).forEach((intv) => {
+              const row = [
+                `"${student.name}"`,
+                age?.toString() || 'N/A',
+                formatGender(student.gender),
+                typeLabel,
+                `Intervalo ${intv.order_index ?? ''}`
+              ];
+              allKeys.forEach(key => {
+                const raw = (intv as unknown as Record<string, unknown>)[key];
+                if (raw === null || raw === undefined) {
+                  row.push('');
+                } else {
+                  const intervalCol = intervalColumns.find(c => c.key === key);
+                  if (intervalCol?.formatter) {
+                    const fv = (typeof raw === 'number' || typeof raw === 'string' || raw === null) ? raw : null;
+                    row.push(intervalCol.formatter(fv));
+                  } else {
+                    row.push(String(raw));
+                  }
+                }
+              });
+              row.push(''); // observações não se aplicam por intervalo
+              csvContent += row.join(',') + '\n';
+            });
+          }
         });
       } else {
         const row = [
           `"${student.name}"`,
-          age ?? 'N/A',
+          age?.toString() || 'N/A',
           formatGender(student.gender),
-          '', '', '',
+          '',
+          'Resumo',
+          ...Array(allKeys.size).fill(''),
+          ''
         ];
         csvContent += row.join(',') + '\n';
       }
@@ -643,7 +1016,7 @@ export default function ReportExporter() {
           </div>
           <div>
             <h3 className="text-lg font-semibold text-white">Exportar Relatórios</h3>
-            <p className="text-blue-100 text-sm">Gere relatórios detalhados em PDF sobre a performance dos alunos</p>
+            <p className="text-blue-100 text-sm">Gere relatórios detalhados em PDF, CSV e XLSX sobre a performance dos alunos</p>
           </div>
         </div>
       </div>
@@ -781,7 +1154,7 @@ export default function ReportExporter() {
         </div>
         
         {/* Botões de Exportação */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Button 
             onClick={handleGenerateReport} 
             disabled={loading || (options.type === 'individual' && !selectedStudent)}
@@ -809,6 +1182,18 @@ export default function ReportExporter() {
             <div className="flex items-center space-x-2">
               <FileText className="h-4 w-4" />
               <span>Exportar CSV</span>
+            </div>
+          </Button>
+
+          <Button 
+            onClick={generateXLSXReport} 
+            disabled={loading}
+            variant="outline"
+            className="w-full"
+          >
+            <div className="flex items-center space-x-2">
+              <FileText className="h-4 w-4" />
+              <span>Exportar XLSX</span>
             </div>
           </Button>
         </div>

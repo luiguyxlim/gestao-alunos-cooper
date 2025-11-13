@@ -397,16 +397,16 @@ export default function TrainingPrescriptionForm({ students, selectedStudentId }
                           </div>
                         </div>
 
-                        {/* Gasto de Oxigênio */}
+                        {/* PACE */}
                         <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300">
                           <div className="flex items-center gap-3 mb-3">
                             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white text-sm">
                               ⚡
                             </div>
-                            <span className="text-sm font-bold text-slate-700">Gasto de Oxigênio</span>
+                            <span className="text-sm font-bold text-slate-700">PACE</span>
                           </div>
                           <div className="text-2xl font-black text-blue-600">
-                            {calculations.trainingIntensity.toFixed(2)} ml/kg/min
+                            {calculations.trainingIntensity.toFixed(2)} km/h
                           </div>
                         </div>
 

@@ -75,29 +75,34 @@ export default function PWAInstaller() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
     window.addEventListener('appinstalled', handleAppInstalled)
 
-    // Register service worker with update detection
+    // Register/Unregister Service Worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .then((reg) => {
-          // Service Worker registrado com sucesso
-          setRegistration(reg)
-
-          // Check for updates
-          reg.addEventListener('updatefound', () => {
-            const newWorker = reg.installing
-            if (newWorker) {
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  setNotification('update')
-                }
-              })
-            }
+      if (process.env.NODE_ENV === 'production') {
+        navigator.serviceWorker.register('/sw.js')
+          .then((reg) => {
+            setRegistration(reg)
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing
+              if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    setNotification('update')
+                  }
+                })
+              }
+            })
           })
-        })
-        .catch(() => {
-          // Falha no registro do Service Worker
-        })
-
+          .catch(() => {
+            // Falha no registro do Service Worker
+          })
+      } else {
+        // Em desenvolvimento, evitar SW para não cachear bundles antigos e causar hydration mismatch
+        navigator.serviceWorker.getRegistrations()
+          .then((regs) => {
+            regs.forEach((reg) => reg.unregister())
+          })
+          .catch(() => {})
+      }
     }
 
     return () => {

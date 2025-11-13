@@ -210,7 +210,7 @@ export default async function PerformanceEvaluationPage({ params }: PerformanceE
                   </div>
                   
                   <div className="bg-white rounded-lg p-4 border border-blue-200 shadow-sm">
-                    <strong className="text-blue-900">Gasto de Oxigênio:</strong> IT = (VO2max × %I) / 100
+                    <strong className="text-blue-900">MET:</strong> MET = (VO2max × %I) / 100
                     <br />
                     <span className="text-sm text-blue-700 mt-2 block">
                       Onde VO2max = VO2 Máximo ({formatNumber(evaluation.vo2_max)} ml/kg/min) e %I = Percentual de Intensidade ({formatNumber(evaluation.intensity_percentage, 0)}%)
@@ -218,10 +218,10 @@ export default async function PerformanceEvaluationPage({ params }: PerformanceE
                   </div>
                   
                   <div className="bg-white rounded-lg p-4 border border-blue-200 shadow-sm">
-                    <strong className="text-blue-900">Consumo Total de O2:</strong> CTO2 = (IT × PC × T) / 1000
+                    <strong className="text-blue-900">Consumo Total de O2:</strong> CTO2 = (MET × PC × T) / 1000
                     <br />
                     <span className="text-sm text-blue-700 mt-2 block">
-                      Onde IT = Gasto de Oxigênio ({formatNumber(evaluation.training_intensity)} ml/kg/min), PC = Peso Corporal ({formatNumber(evaluation.body_weight)} kg) e T = Tempo de Treino ({formatNumber(evaluation.training_time, 0)} min)
+                      Onde MET = MET ({formatNumber(evaluation.training_intensity)} ml/kg/min), PC = Peso Corporal ({formatNumber(evaluation.body_weight)} kg) e T = Tempo de Treino ({formatNumber(evaluation.training_time, 0)} min)
                     </span>
                   </div>
                   

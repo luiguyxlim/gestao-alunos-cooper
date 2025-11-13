@@ -46,7 +46,7 @@ export default async function NewTestPage({ searchParams }: NewTestPageProps) {
               </div>
 
               {/* Grid responsivo melhorado */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                 {/* Teste de Cooper - Card Principal */}
                 <Link
                   href={`/tests/new?type=cooper${selectedStudentId ? `&student_id=${selectedStudentId}` : ''}`}
@@ -98,6 +98,30 @@ export default async function NewTestPage({ searchParams }: NewTestPageProps) {
                     </span>
                     <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full bg-purple-200 text-purple-800 text-xs font-medium">
                       Distância
+                    </span>
+                  </div>
+                </Link>
+
+                {/* Teste Intervalado */}
+                <Link
+                  href={`/tests/interval/new${selectedStudentId ? `?student_id=${selectedStudentId}` : ''}`}
+                  className="group relative bg-gradient-to-br from-emerald-50 to-emerald-100 p-4 sm:p-6 border-2 border-emerald-200 rounded-xl hover:border-emerald-500 hover:shadow-lg hover:scale-105 transition-all duration-300"
+                >
+                  <div className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-emerald-500 rounded-xl shadow-lg mb-4 group-hover:bg-emerald-600 transition-colors">
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-5-5-6 6" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">Teste Intervalado</h3>
+                  <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                    Crie uma sessão com múltiplos intervalos baseada no teste de Cooper
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full bg-emerald-200 text-emerald-800 text-xs font-medium">
+                      Intervalos
+                    </span>
+                    <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full bg-emerald-200 text-emerald-800 text-xs font-medium">
+                      Velocidade
                     </span>
                   </div>
                 </Link>

@@ -32,6 +32,19 @@ interface Student {
   name: string
 }
 
+// Linhas de intervalos salvos para testes intervalados
+interface IntervalRow {
+  order_index: number
+  mode: 'distance_intensity' | 'distance_time'
+  distance_meters: number
+  intensity_percentage: number | null
+  time_minutes: number
+  velocity_m_per_min: number
+  o2_consumption_l: number
+  kcal: number
+  weight_loss_grams: number
+}
+
 const formatDate = (dateString: string) => formatDateToBR(dateString)
 
 function getTestTypeLabel(testType: string) {
@@ -39,6 +52,7 @@ function getTestTypeLabel(testType: string) {
     'cooper_vo2': 'Cooper VO2 (Teste de 12 minutos)',
     'cooper': 'Cooper VO2 (Teste de 12 minutos)',
     'performance_evaluation': 'Avaliação de Performance',
+    'interval_training': 'Treino Intervalado',
     'flexibility': 'Flexibilidade',
     'strength': 'Força',
     'endurance': 'Resistência',
@@ -53,6 +67,7 @@ export default function TestDetailPage() {
   const router = useRouter()
   const [test, setTest] = useState<Test | null>(null)
   const [student, setStudent] = useState<Student | null>(null)
+  const [intervals, setIntervals] = useState<IntervalRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [dataLoaded, setDataLoaded] = useState(false)
@@ -88,6 +103,21 @@ export default function TestDetailPage() {
         }
 
         setTest(testData)
+
+        // Carrega intervalos quando for teste intervalado
+        if (testData.test_type === 'interval_training') {
+          const { data: intervalData, error: intervalsError } = await supabase
+            .from('interval_training_intervals')
+            .select('*')
+            .eq('test_id', testData.id)
+            .order('order_index', { ascending: true })
+
+          if (intervalsError) {
+            console.error('Erro ao buscar intervalos do treino:', intervalsError)
+          } else {
+            setIntervals((intervalData ?? []) as IntervalRow[])
+          }
+        }
 
         if (testData.student_id) {
           const { data: studentData, error: studentError } = await supabase
@@ -308,6 +338,138 @@ export default function TestDetailPage() {
                 </div>
               )}
               
+              {/* Resultados do Treino Intervalado */}
+              {test.test_type === 'interval_training' && (
+                <div className="space-y-8">
+                  <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+                    <div className="bg-teal-600 px-8 py-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 bg-white/20 rounded-lg flex items-center justify-center text-white text-2xl">⏱️</div>
+                        <div>
+                          <h2 className="text-3xl font-bold text-white">Resultados do Treino Intervalado</h2>
+                          <p className="text-teal-100 font-medium">Métricas derivadas do teste de Cooper e sessões de intervalo</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-8 space-y-8">
+                      {/* Resumo */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {typeof test.vo2_max === 'number' && (
+                          <div className="bg-emerald-50 border-2 border-emerald-200 rounded-lg p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center text-white">🫁</div>
+                              <div>
+                                <h3 className="text-lg font-bold text-emerald-900">VO2 Máximo</h3>
+                                <p className="text-sm text-emerald-700">ml/kg/min</p>
+                              </div>
+                            </div>
+                            <div className="text-center bg-white rounded-lg p-4 shadow-sm">
+                              <div className="text-3xl font-black text-emerald-700">
+                                {test.vo2_max}
+                                <span className="text-lg font-semibold text-emerald-600 ml-1">ml/kg/min</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {typeof test.total_o2_consumption === 'number' && (
+                          <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center text-white">💨</div>
+                              <div>
+                                <h3 className="text-lg font-bold text-blue-900">Consumo de O2</h3>
+                                <p className="text-sm text-blue-700">Total (L)</p>
+                              </div>
+                            </div>
+                            <div className="text-center bg-white rounded-lg p-4 shadow-sm">
+                              <div className="text-3xl font-black text-blue-700">
+                                {test.total_o2_consumption.toFixed(2)}
+                                <span className="text-lg font-semibold text-blue-600 ml-1">L</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {typeof test.caloric_expenditure === 'number' && (
+                          <div className="bg-red-50 border-2 border-red-200 rounded-lg p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center text-white">🔥</div>
+                              <div>
+                                <h3 className="text-lg font-bold text-red-900">Gasto Calórico</h3>
+                                <p className="text-sm text-red-700">kcal</p>
+                              </div>
+                            </div>
+                            <div className="text-center bg-white rounded-lg p-4 shadow-sm">
+                              <div className="text-3xl font-black text-red-700">
+                                {test.caloric_expenditure.toFixed(2)}
+                                <span className="text-lg font-semibold text-red-600 ml-1">kcal</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {typeof test.weight_loss === 'number' && (
+                          <div className="bg-pink-50 border-2 border-pink-200 rounded-lg p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-10 h-10 bg-pink-500 rounded-lg flex items-center justify-center text-white">⚖️</div>
+                              <div>
+                                <h3 className="text-lg font-bold text-pink-900">Perda de Peso</h3>
+                                <p className="text-sm text-pink-700">Total (g)</p>
+                              </div>
+                            </div>
+                            <div className="text-center bg-white rounded-lg p-4 shadow-sm">
+                              <div className="text-3xl font-black text-pink-700">
+                                {test.weight_loss.toFixed(1)}
+                                <span className="text-lg font-semibold text-pink-600 ml-1">g</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Tabela de Treinos */}
+                      <div className="mt-6">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                          <span>📈</span>
+                          Treinos
+                        </h3>
+                        {intervals.length === 0 ? (
+                          <div className="text-sm text-gray-600">Nenhum treino registrado.</div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full text-sm">
+                              <thead>
+                                <tr className="bg-gray-50 text-gray-700">
+                                  <th className="p-2 text-left">#</th>
+                                  <th className="p-2 text-left">Modo</th>
+                                  <th className="p-2 text-left">Distância (m)</th>
+                                  <th className="p-2 text-left">% Intensidade</th>
+                                  <th className="p-2 text-left">Tempo (min)</th>
+                                  <th className="p-2 text-left">Pace (km/h)</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {intervals.map((r) => (
+                                  <tr key={r.order_index} className="border-t">
+                                    <td className="p-2">{r.order_index}</td>
+                                    <td className="p-2">{r.mode === 'distance_intensity' ? 'D+I' : 'D+T'}</td>
+                                    <td className="p-2">{r.distance_meters}</td>
+                                    <td className="p-2">{r.intensity_percentage ?? '-'}</td>
+                                    <td className="p-2">{r.time_minutes ?? '-'}</td>
+                                    <td className="p-2">{(((r.velocity_m_per_min ?? 0) * 60) / 1000).toFixed(2)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Resultados do Teste de Performance */}
               {test.test_type === 'performance_evaluation' && (
                 <div className="space-y-8">
@@ -351,7 +513,7 @@ export default function TestDetailPage() {
                           </div>
                         )}
 
-                        {/* Gasto de Oxigênio */}
+                        {/* PACE */}
                         {test.training_intensity && (
                           <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6">
                             <div className="flex items-center gap-3 mb-4">
@@ -359,14 +521,14 @@ export default function TestDetailPage() {
                                 🎯
                               </div>
                               <div>
-                                <h3 className="text-lg font-bold text-green-900">Gasto de Oxigênio</h3>
-                                <p className="text-sm text-green-700">ml/kg/min</p>
+                                <h3 className="text-lg font-bold text-green-900">PACE</h3>
+                                <p className="text-sm text-green-700">km/h</p>
                               </div>
                             </div>
                             <div className="text-center bg-white rounded-lg p-4 shadow-sm">
                               <div className="text-3xl font-black text-green-700 mb-2">
                                 {test.training_intensity.toFixed(2)}
-                                <span className="text-lg font-semibold text-green-600 ml-1">ml/kg/min</span>
+                                <span className="text-lg font-semibold text-green-600 ml-1">km/h</span>
                               </div>
                             </div>
                           </div>
@@ -500,7 +662,7 @@ export default function TestDetailPage() {
                             <div className="text-center">
                               <div className="text-2xl font-black text-gray-700 mb-2">
                                 {test.total_o2_consumption.toFixed(2)}
-                                <span className="text-lg font-semibold text-gray-600 ml-1">ml</span>
+                                <span className="text-lg font-semibold text-gray-600 ml-1">L</span>
                               </div>
                               <p className="text-sm text-gray-600">Total durante o treino</p>
                             </div>

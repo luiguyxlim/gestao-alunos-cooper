@@ -5,7 +5,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 // Client-side Supabase client
 export function createClient() {
-  return createBrowserClient(supabaseUrl, supabaseAnonKey, {
+  return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
@@ -249,6 +249,50 @@ export type Database = {
           // Observações gerais
           notes?: string | null
           updated_at?: string
+        }
+      }
+      interval_training_intervals: {
+        Row: {
+          id: string
+          test_id: string
+          order_index: number
+          mode: 'distance_intensity' | 'distance_time'
+          distance_meters: number
+          intensity_percentage: number | null
+          time_minutes: number | null
+          velocity_m_per_min: number | null
+          o2_consumption_l: number | null
+          kcal: number | null
+          weight_loss_grams: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          test_id: string
+          order_index: number
+          mode: 'distance_intensity' | 'distance_time'
+          distance_meters: number
+          intensity_percentage?: number | null
+          time_minutes?: number | null
+          velocity_m_per_min?: number | null
+          o2_consumption_l?: number | null
+          kcal?: number | null
+          weight_loss_grams?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          test_id?: string
+          order_index?: number
+          mode?: 'distance_intensity' | 'distance_time'
+          distance_meters?: number
+          intensity_percentage?: number | null
+          time_minutes?: number | null
+          velocity_m_per_min?: number | null
+          o2_consumption_l?: number | null
+          kcal?: number | null
+          weight_loss_grams?: number | null
+          created_at?: string
         }
       }
       performance_age_groups: {

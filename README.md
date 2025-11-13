@@ -132,6 +132,17 @@ O sistema pode ser instalado como um aplicativo nativo:
 - **Ícones personalizados** e splash screen
 - **Atalhos rápidos** para ações principais
 
+## 🤖 Configuração do MCP Supabase
+
+Para usar o assistente AI com acesso direto ao banco de dados Supabase, configure o Model Context Protocol:
+
+📖 **Veja o guia completo:** [MCP_SETUP.md](./MCP_SETUP.md)
+
+**Resumo rápido:**
+1. Obtenha um Personal Access Token em [Supabase Dashboard](https://supabase.com/dashboard/account/tokens)
+2. Configure o token em Settings → Features → Model Context Protocol → Supabase
+3. Reinicie o Cursor
+
 ## 🚀 Deploy na Vercel
 
 ### 1. Preparação

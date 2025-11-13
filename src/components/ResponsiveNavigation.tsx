@@ -29,6 +29,7 @@ function ResponsiveNavigation({ user }: ResponsiveNavigationProps) {
     { name: 'Avaliandos', href: '/evaluatees' },
     { name: 'Testes', href: '/tests' },
     { name: 'Performance', href: '/performance' },
+    { name: 'Relatórios', href: '/reports' },
   ]
 
   const isActive = (href: string) => {

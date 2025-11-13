@@ -397,7 +397,7 @@ export default function PerformancePage() {
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
             <Tabs defaultValue="overview" className="w-full">
               <div className="border-b border-gray-100 bg-gray-50">
-                <TabsList className="grid w-full grid-cols-6 bg-transparent p-1">
+                <TabsList className="grid w-full grid-cols-5 bg-transparent p-1">
                   <TabsTrigger 
                     value="overview" 
                     className="data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600 text-gray-600 font-medium"
@@ -428,12 +428,7 @@ export default function PerformancePage() {
                   >
                     ⚖️ Comparação
                   </TabsTrigger>
-                  <TabsTrigger 
-                    value="reports" 
-                    className="data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600 text-gray-600 font-medium"
-                  >
-                    📋 Relatórios
-                  </TabsTrigger>
+                  {/* Aba de Relatórios removida - agora página dedicada */}
                 </TabsList>
               </div>
 
@@ -619,22 +614,7 @@ export default function PerformancePage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="reports" className="p-8">
-          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full flex items-center justify-center mr-3">
-                  <Download className="w-5 h-5 text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900">Exportação de Relatórios</h3>
-              </div>
-              <div className="text-sm text-gray-500 bg-green-50 px-3 py-2 rounded-lg">
-                <span className="font-medium">✨ Novo:</span> Exportação em CSV disponível
-              </div>
-            </div>
-            <ReportExporter />
-          </div>
-        </TabsContent>
+        {/* Conteúdo de Relatórios removido - usar /reports */}
             </Tabs>
           </div>
         </div>
