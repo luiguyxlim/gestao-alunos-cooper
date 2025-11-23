@@ -273,7 +273,7 @@ export default function PerformancePage() {
     } finally {
       setLoading(false)
     }
-  }, [user?.id])
+  }, [user?.id, selectedStudentId])
 
   const handleRefresh = async () => {
     setRefreshing(true)
