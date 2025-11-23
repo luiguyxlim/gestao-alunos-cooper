@@ -136,7 +136,7 @@ export default function IntervalTrainingForm({ students, selectedStudentId: pres
         setShowConfirm(false)
         return
       }
-      logger.supabaseInfo('Iniciando salvamento de teste intervalado', {
+      logger.supabaseInfo('Iniciando salvamento de treino intervalado', {
         student_id: selectedStudentId,
         test_date: testDate,
         cooper_distance: selectedCooperDistance,
@@ -151,10 +151,10 @@ export default function IntervalTrainingForm({ students, selectedStudentId: pres
       fd.set('notes', notes)
       fd.set('intervals_json', JSON.stringify(intervals))
       const result = await createIntervalTrainingTestAction(fd) as { testId: string }
-      logger.supabaseInfo('Teste intervalado salvo com sucesso', result)
+      logger.supabaseInfo('Treino intervalado salvo com sucesso', result)
       setShowConfirm(false)
       setSaving(false)
-      setSaveMessage('Teste salvo com sucesso! Redirecionando...')
+      setSaveMessage('Treino salvo com sucesso! Redirecionando...')
       // Navega para a página do teste criado após breve feedback
       setTimeout(() => {
         router.push(`/tests/${result.testId}`)
@@ -163,8 +163,8 @@ export default function IntervalTrainingForm({ students, selectedStudentId: pres
       console.error(e)
       setSaving(false)
       setShowConfirm(false)
-      const msg = e instanceof Error ? e.message : 'Erro ao salvar o teste intervalado'
-      logger.supabaseError('Falha ao salvar teste intervalado', e instanceof Error ? e : undefined, {
+      const msg = e instanceof Error ? e.message : 'Erro ao salvar o treino intervalado'
+      logger.supabaseError('Falha ao salvar treino intervalado', e instanceof Error ? e : undefined, {
         student_id: selectedStudentId,
         test_date: testDate,
         cooper_distance: selectedCooperDistance,
@@ -180,7 +180,7 @@ export default function IntervalTrainingForm({ students, selectedStudentId: pres
       {/* Header */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl shadow-lg mb-4">
-          <span className="text-lg font-bold">Teste Intervalado</span>
+          <span className="text-lg font-bold">Treino Intervalado</span>
         </div>
         <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-2">Sessão com múltiplos treinos</h1>
         <p className="text-slate-600 text-lg">Baseada em teste de Cooper, com cálculo automático de métricas</p>
@@ -281,10 +281,10 @@ export default function IntervalTrainingForm({ students, selectedStudentId: pres
         ))}
       </div>
 
-      {/* Preview */}
+      {/* Variáveis do Treinamento */}
       <div className="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl border border-white/20 p-6">
-        <h3 className="text-lg font-bold text-slate-900 mb-2">Preview</h3>
-        {!calc && <p className="text-sm text-gray-600">Preencha os campos para ver o preview.</p>}
+        <h3 className="text-lg font-bold text-slate-900 mb-2">Variáveis do Treinamento</h3>
+        {!calc && <p className="text-sm text-gray-600">Preencha os campos para ver as variáveis do treinamento.</p>}
         {calc && (
           <div className="space-y-3">
             <div className="text-sm text-gray-800">VO2máx: {calc.summary.vo2Max} ml/kg/min — MET máx: {calc.summary.maxMET}</div>
@@ -428,7 +428,7 @@ export default function IntervalTrainingForm({ students, selectedStudentId: pres
           }}
           disabled={saving}
         >
-          {saving ? 'Salvando...' : 'Salvar teste'}
+          {saving ? 'Salvando...' : 'Salvar Treino'}
         </button>
         {saveMessage && (
           <span className="text-emerald-700 text-sm" aria-live="polite">{saveMessage}</span>
@@ -440,7 +440,7 @@ export default function IntervalTrainingForm({ students, selectedStudentId: pres
         onClose={() => setShowConfirm(false)}
         onConfirm={onConfirmSave}
         title="Confirmar salvamento"
-        message="Tem certeza que deseja salvar este teste intervalado?"
+        message="Tem certeza que deseja salvar este treino intervalado?"
         confirmText="Salvar"
         cancelText="Cancelar"
         type="info"

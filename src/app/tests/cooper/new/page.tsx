@@ -470,7 +470,7 @@ export default function NewCooperTestPage({ searchParams }: NewCooperTestPagePro
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002 2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
                   </div>
-                  Criar Teste
+                  Gravar Dados
                 </button>
               </div>
             </form>

@@ -112,7 +112,7 @@ export default async function NewTestPage({ searchParams }: NewTestPageProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-5-5-6 6" />
                     </svg>
                   </div>
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">Teste Intervalado</h3>
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">Prescrição do Treinamento Intervalado</h3>
                   <p className="text-sm text-gray-600 mb-4 leading-relaxed">
                     Crie uma sessão com múltiplos intervalos baseada no teste de Cooper
                   </p>

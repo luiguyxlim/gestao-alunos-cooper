@@ -19,6 +19,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import PerformanceCharts from '@/components/performance/PerformanceCharts'
 import PerformanceComparison from '@/components/performance/PerformanceComparison'
 import ReportExporter from '@/components/performance/ReportExporter'
+import { getPerformanceData } from '@/lib/performance-utils'
+import type { Database } from '@/lib/supabase'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
+import * as XLSX from 'xlsx'
 import ResponsiveNavigation from '@/components/ResponsiveNavigation'
 import {
   Activity,
@@ -215,6 +221,9 @@ export default function PerformancePage() {
   const [insights, setInsights] = useState<PerformanceInsight[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [allTests, setAllTests] = useState<Database['public']['Tables']['performance_tests']['Row'][]>([])
+  const [studentsList, setStudentsList] = useState<Database['public']['Tables']['students']['Row'][]>([])
+  const [selectedStudentId, setSelectedStudentId] = useState<string>('')
 
   const loadData = useCallback(async () => {
     if (!user?.id) return
@@ -251,6 +260,13 @@ export default function PerformancePage() {
 
         const generated = generatePerformanceInsights(metrics, [])
         setInsights(generated)
+      }
+
+      const perfData = await getPerformanceData(user.id)
+      setAllTests(perfData.tests || [])
+      setStudentsList(perfData.students || [])
+      if (!selectedStudentId && (perfData.students || []).length > 0) {
+        setSelectedStudentId(perfData.students[0].id)
       }
     } catch (error) {
       console.error('Erro ao carregar dados de performance:', error)
@@ -397,7 +413,7 @@ export default function PerformancePage() {
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
             <Tabs defaultValue="overview" className="w-full">
               <div className="border-b border-gray-100 bg-gray-50">
-                <TabsList className="grid w-full grid-cols-5 bg-transparent p-1">
+                <TabsList className="grid w-full grid-cols-6 bg-transparent p-1">
                   <TabsTrigger 
                     value="overview" 
                     className="data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600 text-gray-600 font-medium"
@@ -427,6 +443,12 @@ export default function PerformancePage() {
                     className="data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600 text-gray-600 font-medium"
                   >
                     ⚖️ Comparação
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="evolution" 
+                    className="data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600 text-gray-600 font-medium"
+                  >
+                    📉 Evolução
                   </TabsTrigger>
                   {/* Aba de Relatórios removida - agora página dedicada */}
                 </TabsList>
@@ -611,6 +633,99 @@ export default function PerformancePage() {
               <h3 className="text-xl font-bold text-gray-900">Comparação de Performance</h3>
             </div>
             <PerformanceComparison />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="evolution" className="p-8">
+          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center mr-3">📉</div>
+                <h3 className="text-xl font-bold text-gray-900">Evolução de VO2 Máx por Aluno</h3>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const student = studentsList.find((s) => s.id === selectedStudentId)
+                    const rows = (allTests || [])
+                      .filter((t) => t.student_id === selectedStudentId && t.vo2_max !== null)
+                      .sort((a, b) => new Date(a.test_date || a.created_at).getTime() - new Date(b.test_date || b.created_at).getTime())
+                      .map((t) => [
+                        new Date(t.test_date || t.created_at).toLocaleDateString('pt-BR'),
+                        t.vo2_max ?? null
+                      ])
+                    const pdf = new jsPDF()
+                    pdf.setFontSize(16)
+                    pdf.text(`Evolução do Aluno: ${student?.name ?? ''}`, 14, 16)
+                    pdf.setFontSize(11)
+                    autoTable(pdf, {
+                      startY: 22,
+                      head: [["Data", "VO2 Máx (ml/kg/min)"]],
+                      body: rows,
+                      theme: 'striped'
+                    })
+                    pdf.save(`evolucao_vo2_${student?.name ?? 'aluno'}.pdf`)
+                  }}
+                >
+                  Exportar PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const student = studentsList.find((s) => s.id === selectedStudentId)
+                    const data = (allTests || [])
+                      .filter((t) => t.student_id === selectedStudentId && t.vo2_max !== null)
+                      .sort((a, b) => new Date(a.test_date || a.created_at).getTime() - new Date(b.test_date || b.created_at).getTime())
+                      .map((t) => ({
+                        Data: new Date(t.test_date || t.created_at).toLocaleDateString('pt-BR'),
+                        VO2Max_mlkgmin: t.vo2_max ?? null
+                      }))
+                    const ws = XLSX.utils.json_to_sheet(data)
+                    const wb = XLSX.utils.book_new()
+                    XLSX.utils.book_append_sheet(wb, ws, 'EvolucaoVO2')
+                    XLSX.writeFile(wb, `evolucao_vo2_${student?.name ?? 'aluno'}.xlsx`)
+                  }}
+                >
+                  Exportar XLSX
+                </Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Aluno</label>
+                <select
+                  className="w-full h-11 border border-gray-200 rounded-xl px-3"
+                  value={selectedStudentId}
+                  onChange={(e) => setSelectedStudentId(e.target.value)}
+                >
+                  {studentsList.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="mt-4">
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={(allTests || [])
+                      .filter((t) => t.student_id === selectedStudentId && t.vo2_max !== null)
+                      .sort((a, b) => new Date(a.test_date || a.created_at).getTime() - new Date(b.test_date || b.created_at).getTime())
+                      .map((t) => ({
+                        date: new Date(t.test_date || t.created_at).toLocaleDateString('pt-BR'),
+                        vo2: Number(t.vo2_max || 0)
+                      }))}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="vo2" stroke="#EF4444" strokeWidth={2} name="VO2 Máx (ml/kg/min)" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </div>
         </TabsContent>
 

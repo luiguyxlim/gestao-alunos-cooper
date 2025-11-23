@@ -513,22 +513,58 @@ export default function TestDetailPage() {
                           </div>
                         )}
 
-                        {/* PACE */}
+                        {/* MET Máximo */}
+                        {test.vo2_max && (
+                          <div className="bg-cyan-50 border-2 border-cyan-200 rounded-lg p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-10 h-10 bg-cyan-500 rounded-lg flex items-center justify-center text-white">📊</div>
+                              <div>
+                                <h3 className="text-lg font-bold text-cyan-900">MET Máximo</h3>
+                              </div>
+                            </div>
+                            <div className="text-center bg-white rounded-lg p-4 shadow-sm">
+                              <div className="text-3xl font-black text-cyan-700 mb-2">
+                                {((test.vo2_max || 0) / 3.5).toFixed(2)}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* IT */}
                         {test.training_intensity && (
                           <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6">
                             <div className="flex items-center gap-3 mb-4">
-                              <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center text-white">
-                                🎯
-                              </div>
+                              <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center text-white">🎯</div>
                               <div>
-                                <h3 className="text-lg font-bold text-green-900">PACE</h3>
-                                <p className="text-sm text-green-700">km/h</p>
+                                <h3 className="text-lg font-bold text-green-900">IT</h3>
+                                <p className="text-sm text-green-700">METS</p>
                               </div>
                             </div>
                             <div className="text-center bg-white rounded-lg p-4 shadow-sm">
                               <div className="text-3xl font-black text-green-700 mb-2">
                                 {test.training_intensity.toFixed(2)}
-                                <span className="text-lg font-semibold text-green-600 ml-1">km/h</span>
+                                <span className="text-lg font-semibold text-green-600 ml-1">METS</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Fração do Treinamento */}
+                        {test.vo2_max && test.intensity_percentage && (
+                          <div className="bg-teal-50 border-2 border-teal-200 rounded-lg p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center text-white">🎯</div>
+                              <div>
+                                <h3 className="text-lg font-bold text-teal-900">Fração do Treinamento</h3>
+                              </div>
+                            </div>
+                            <div className="text-center bg-white rounded-lg p-4 shadow-sm">
+                              <div className="text-2xl font-black text-teal-700 mb-2">
+                                {(() => {
+                                  const maxMet = (test.vo2_max || 0) / 3.5
+                                  const pct = Math.round(test.intensity_percentage || 0)
+                                  return (((maxMet + pct) / 100)).toFixed(4)
+                                })()}
                               </div>
                             </div>
                           </div>
@@ -595,6 +631,25 @@ export default function TestDetailPage() {
                               <div className="text-3xl font-black text-red-700 mb-2">
                                 {test.caloric_expenditure.toFixed(2)}
                                 <span className="text-lg font-semibold text-red-600 ml-1">kcal</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Consumo O2/min */}
+                        {test.vo2_max && test.intensity_percentage && test.body_weight && (
+                          <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-10 h-10 bg-yellow-500 rounded-lg flex items-center justify-center text-white">🫁</div>
+                              <div>
+                                <h3 className="text-lg font-bold text-yellow-900">Consumo O2/min</h3>
+                                <p className="text-sm text-yellow-700">L/min</p>
+                              </div>
+                            </div>
+                            <div className="text-center bg-white rounded-lg p-4 shadow-sm">
+                              <div className="text-2xl font-black text-yellow-700 mb-2">
+                                {(((test.vo2_max || 0) * ((test.intensity_percentage || 0) / 100) * (test.body_weight || 0)) / 1000).toFixed(2)}
+                                <span className="text-lg font-semibold text-yellow-600 ml-1">L/min</span>
                               </div>
                             </div>
                           </div>

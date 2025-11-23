@@ -156,6 +156,9 @@ export default function ReportExporter() {
   // Geração de XLSX otimizado por áreas (Cooper / Prescrição / Intervalos)
   const generateXLSXReport = async () => {
     const currentStudents = students.length > 0 ? students : await loadStudents();
+    const targetStudents = (options.type === 'individual' && selectedStudent)
+      ? currentStudents.filter(s => s.id === selectedStudent)
+      : currentStudents;
 
     const wb = XLSX.utils.book_new();
 
@@ -181,7 +184,7 @@ export default function ReportExporter() {
     {
       const headers = ['Nome', 'Idade', 'Gênero', ...getTableHeaders(cooperColumns), 'Observações'];
       const rows: (string | number)[][] = [];
-      currentStudents.forEach(student => {
+      targetStudents.forEach(student => {
         const tests = filterTestsByPeriod(student.tests, options.period);
         const cooperTests = tests.filter(t => (t.test_type || '').toLowerCase().includes('cooper'));
         const age = calculateAge(student.birth_date);
@@ -208,7 +211,7 @@ export default function ReportExporter() {
     {
       const headers = ['Nome', 'Idade', 'Gênero', ...getTableHeaders(prescriptionColumns), 'Observações'];
       const rows: (string | number)[][] = [];
-      currentStudents.forEach(student => {
+      targetStudents.forEach(student => {
         const tests = filterTestsByPeriod(student.tests, options.period);
         const prescTests = tests.filter(t => (t.test_type || '').toLowerCase().includes('performance'));
         const age = calculateAge(student.birth_date);
@@ -235,7 +238,7 @@ export default function ReportExporter() {
     {
       const headers = ['Nome', 'Idade', 'Gênero', 'Data', ...getTableHeaders(intervalColumns)];
       const rows: (string | number)[][] = [];
-      currentStudents.forEach(student => {
+      targetStudents.forEach(student => {
         const tests = filterTestsByPeriod(student.tests, options.period);
         const intervalTests = tests.filter(t => (t.test_type || '').toLowerCase().includes('interval'));
         const age = calculateAge(student.birth_date);
@@ -836,6 +839,9 @@ export default function ReportExporter() {
 
   const generateCSVReport = async () => {
     const currentStudents = students.length > 0 ? students : await loadStudents();
+    const targetStudents = (options.type === 'individual' && selectedStudent)
+      ? currentStudents.filter(s => s.id === selectedStudent)
+      : currentStudents;
 
     // Build CSV headers from all report columns
     const headers = ['Nome', 'Idade', 'Gênero', 'Tipo de Teste', 'Seção']
@@ -859,7 +865,7 @@ export default function ReportExporter() {
     
     let csvContent = headers.join(',') + '\n';
     
-    currentStudents.forEach(student => {
+    targetStudents.forEach(student => {
       const tests = filterTestsByPeriod(student.tests, options.period);
       const age = calculateAge(student.birth_date);
       
