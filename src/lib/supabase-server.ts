@@ -1,7 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { AuthApiError } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -31,11 +30,13 @@ export async function createServerSupabaseClient() {
 }
 
 function isInvalidRefreshToken(error: unknown) {
-  if (error instanceof AuthApiError) {
-    const message = error.message?.toLowerCase() ?? ''
-    return message.includes('invalid refresh token') || message.includes('refresh token not found')
-  }
-  return false
+  const message = error instanceof Error ? error.message.toLowerCase() : ''
+  return message.includes('invalid refresh token') || message.includes('refresh token not found')
+}
+
+function isMissingAuthSession(error: unknown) {
+  const message = error instanceof Error ? error.message.toLowerCase() : ''
+  return message.includes('auth session missing')
 }
 
 async function clearSupabaseCookies() {
@@ -71,6 +72,9 @@ export async function getAuthenticatedUser(supabase?: ReturnType<typeof createSe
         }
         redirect('/login?session=expired')
       }
+      if (isMissingAuthSession(error)) {
+        redirect('/login')
+      }
       throw error
     }
 
@@ -88,6 +92,9 @@ export async function getAuthenticatedUser(supabase?: ReturnType<typeof createSe
         console.warn('[AUTH] Erro ao limpar sessão após refresh token inválido', signOutError)
       }
       redirect('/login?session=expired')
+    }
+    if (isMissingAuthSession(error)) {
+      redirect('/login')
     }
     throw error
   }
