@@ -1,5 +1,5 @@
-const STATIC_CACHE = 'cooper-pro-static-v3'
-const DYNAMIC_CACHE = 'cooper-pro-dynamic-v3'
+const STATIC_CACHE = 'cooper-pro-static-v4'
+const DYNAMIC_CACHE = 'cooper-pro-dynamic-v4'
 
 const urlsToCache = [
   '/',
@@ -37,6 +37,10 @@ self.addEventListener('fetch', (event) => {
 
   // Skip non-GET requests
   if (request.method !== 'GET') {
+    return
+  }
+
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     return
   }
 

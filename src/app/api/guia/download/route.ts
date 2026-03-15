@@ -4,11 +4,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 
 export const runtime = 'nodejs'
+const GUIA_FILE_NAME = 'GUIA COLORIDO.pdf'
 
 function getGuiaPathCandidates() {
   const configuredPath = process.env.GUIA_PDF_PATH
-  const defaultRootPath = path.join(process.cwd(), 'GUIA COLORIDO.pdf')
-  const defaultPublicPath = path.join(process.cwd(), 'public', 'GUIA COLORIDO.pdf')
+  const defaultRootPath = path.join(process.cwd(), GUIA_FILE_NAME)
+  const defaultPublicPath = path.join(process.cwd(), 'public', GUIA_FILE_NAME)
   return [configuredPath, defaultRootPath, defaultPublicPath].filter((value): value is string => Boolean(value))
 }
 
@@ -26,6 +27,18 @@ async function resolveGuiaPath() {
   }
 
   throw lastError
+}
+
+function buildPdfResponse(fileBuffer: Buffer, fileName: string, inline: boolean) {
+  const dispositionType = inline ? 'inline' : 'attachment'
+  return new NextResponse(new Uint8Array(fileBuffer), {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `${dispositionType}; filename="${fileName}"`,
+      'Cache-Control': 'private, max-age=300',
+    },
+  })
 }
 
 export async function GET(request: NextRequest) {
@@ -48,21 +61,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'Arquivo do guia está corrompido.' }, { status: 422 })
     }
 
-    const fileName = path.basename(guiaPath)
     const inline = request.nextUrl.searchParams.get('inline') === '1'
-    const dispositionType = inline ? 'inline' : 'attachment'
-
-    return new NextResponse(new Uint8Array(fileBuffer), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `${dispositionType}; filename="${fileName}"`,
-        'Cache-Control': 'private, max-age=300',
-      },
-    })
+    const fileName = path.basename(guiaPath)
+    return buildPdfResponse(fileBuffer, fileName, inline)
   } catch (fileError) {
     const code = (fileError as NodeJS.ErrnoException).code
     if (code === 'ENOENT') {
+      try {
+        const staticUrl = new URL(`/${encodeURIComponent(GUIA_FILE_NAME)}`, request.nextUrl.origin)
+        const staticResponse = await fetch(staticUrl, { cache: 'no-store' })
+        if (staticResponse.ok) {
+          const fileBuffer = Buffer.from(await staticResponse.arrayBuffer())
+          const hasPdfHeader = fileBuffer.subarray(0, 5).toString('utf8') === '%PDF-'
+          if (!hasPdfHeader) {
+            return NextResponse.json({ message: 'Arquivo do guia está corrompido.' }, { status: 422 })
+          }
+          const inline = request.nextUrl.searchParams.get('inline') === '1'
+          return buildPdfResponse(fileBuffer, GUIA_FILE_NAME, inline)
+        }
+      } catch {}
       return NextResponse.json({ message: 'Arquivo do guia não encontrado.' }, { status: 404 })
     }
     if (code === 'EACCES') {
