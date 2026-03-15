@@ -22,7 +22,7 @@ export default function LoginPage() {
     const clearExpiredTokens = async () => {
       try {
         logger.authDebug('Iniciando limpeza de tokens expirados');
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         logger.authDebug('Tokens limpos com sucesso');
       } catch (error) {
         logger.authError('Erro na limpeza de tokens', error as Error);
@@ -41,7 +41,7 @@ export default function LoginPage() {
     try {
       // Limpar sessão anterior antes de tentar login
       logger.authDebug('Limpando sessão anterior');
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: 'local' });
       logger.authDebug('Sessão anterior limpa');
       
       logger.authDebug('Iniciando autenticação com Supabase', { email });

@@ -29,6 +29,8 @@ export default function MobileNavigation({ user }: MobileNavigationProps) {
     { name: 'Testes', href: '/tests' },
     { name: 'Performance', href: '/performance' },
     { name: 'Relatórios', href: '/reports' },
+    { name: 'GUIA', href: '/guia' },
+    { name: 'Tutorial', href: '/tutorial' },
   ]
 
   const isActive = (href: string) => {
