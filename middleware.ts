@@ -45,7 +45,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Protected routes - require authentication
-  const protectedPaths = ['/dashboard', '/evaluatees', '/tests', '/performance']
+  const protectedPaths = ['/dashboard', '/evaluatees', '/tests', '/performance', '/guia']
   const isProtectedPath = protectedPaths.some(path => 
     request.nextUrl.pathname.startsWith(path)
   )
